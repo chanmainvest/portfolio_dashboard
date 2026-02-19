@@ -1,0 +1,12 @@
+[project]
+name = "portfolio-dashboard"
+version = "1.0.0"
+description = "Stock portfolio analytics report generator"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "yfinance",
+    "scipy",
+    "openpyxl",
+]

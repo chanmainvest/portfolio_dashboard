@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Risk Metrics</title>
+<style>
+    
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0B1220; color: #E0E0E0; margin: 20px; }
+    h1, h2 { color: #E0E0E0; border-bottom: 2px solid #2A3F5F; padding-bottom: 10px; }
+    .info { color: #8899AA; margin-bottom: 20px; font-size: 14px; }
+    .nav { background: #1C2541; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .nav a { color: #7AAFFF; text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 4px; }
+    .nav a:hover { background: #2A3F5F; }
+    .nav a.active { background: #3A7BD5; color: white; }
+    .nav .spacer { flex: 1; }
+    .nav .privacy-toggle { background: #2A3F5F; color: #D4A843; border: 1px solid #3A7BD5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .nav .privacy-toggle:hover { background: #3A7BD5; color: white; }
+    .nav .lang-toggle { background: #2A3F5F; color: #7AAFFF; border: 1px solid #3A7BD5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 8px; }
+    .nav .lang-toggle:hover { background: #3A7BD5; color: white; }
+    body.privacy-mode .dollar-amount { visibility: hidden; }
+    body.privacy-mode .dollar-amount::after { content: '***'; visibility: visible; }
+    .positive { color: #007A33; }
+    .negative { color: #B81D13; }
+    .timestamp { color: #556677; font-size: 12px; margin-top: 20px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .kpi-card { background: #1C2541; border-radius: 8px; padding: 18px; border-left: 4px solid #3A7BD5; position: relative; cursor: help; }
+    .kpi-card.pos { border-left-color: #007A33; }
+    .kpi-card.neg { border-left-color: #B81D13; }
+    .kpi-card.neut { border-left-color: #D4A843; }
+    .kpi-label { color: #8899AA; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .kpi-value { font-size: 24px; font-weight: bold; }
+    .kpi-value.pos { color: #007A33; }
+    .kpi-value.neg { color: #B81D13; }
+    .kpi-value.neut { color: #D4A843; }
+    .kpi-tooltip { display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #0D1526; border: 1px solid #3A7BD5; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #CCDDEE; line-height: 1.5; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.5); pointer-events: none; }
+    .kpi-card:hover .kpi-tooltip { display: block; }
+    .help-icon { font-size: 11px; color: #556677; margin-left: 4px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th { background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; }
+    th:hover { background: #2A3F5F; }
+    td { padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }
+    tr:nth-child(even) { background: #111B2E; }
+    tr:nth-child(odd) { background: #0D1526; }
+    tr:hover { background: #1A2744; }
+    h2 { margin-top: 30px; }
+    .section-label { background: #2A3F5F; color: #AAC0DD; padding: 8px 14px; border-radius: 6px; font-size: 13px; margin: 24px 0 12px 0; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="nav"><a href="index.html" data-i18n="nav_dashboard">Dashboard</a><a href="positions.html" data-i18n="nav_positions">Positions</a><a href="options.html" data-i18n="nav_options">Options</a><a href="correlation_matrix.html" data-i18n="nav_correlation">Correlation</a><a href="risk_metrics.html" class="active" data-i18n="nav_risk_metrics">Risk Metrics</a><a href="stress_testing.html" data-i18n="nav_stress_testing">Stress Testing</a><a href="sector_exposure.html" data-i18n="nav_exposure">Exposure</a><span class="spacer"></span><button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button><button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button></div>
+<script>
+(function() {
+    var key = 'portfolio_privacy_mode';
+    if (localStorage.getItem(key) === 'true') {
+        document.body.classList.add('privacy-mode');
+    }
+    window.togglePrivacy = function() {
+        document.body.classList.toggle('privacy-mode');
+        localStorage.setItem(key, document.body.classList.contains('privacy-mode'));
+        var btn = document.getElementById('privacy-btn');
+        if (btn) {
+            btn.setAttribute('data-i18n', document.body.classList.contains('privacy-mode') ? 'privacy_show' : 'privacy_hide');
+            if (window.applyLanguage) applyLanguage();
+        }
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('privacy-btn');
+        if (btn && document.body.classList.contains('privacy-mode')) {
+            btn.setAttribute('data-i18n', 'privacy_show');
+        }
+    });
+})();
+</script>
+
+<script>
+(function() {
+    var T = {"nav_dashboard": {"en": "Dashboard", "zh": "儀表板"}, "nav_positions": {"en": "Positions", "zh": "持倉"}, "nav_options": {"en": "Options", "zh": "期權"}, "nav_correlation": {"en": "Correlation", "zh": "相關性"}, "nav_risk_metrics": {"en": "Risk Metrics", "zh": "風險指標"}, "nav_stress_testing": {"en": "Stress Testing", "zh": "壓力測試"}, "nav_exposure": {"en": "Exposure", "zh": "風險敞口"}, "privacy_hide": {"en": "$ Hide", "zh": "$ 隱藏"}, "privacy_show": {"en": "$ Show", "zh": "$ 顯示"}, "generated": {"en": "Generated:", "zh": "生成時間:"}, "title_dashboard": {"en": "Stock Portfolio Analytics Dashboard", "zh": "投資組合分析儀表板"}, "desc_dashboard": {"en": "Comprehensive portfolio analysis with risk metrics, correlations, option hedging, and stress testing", "zh": "涵蓋風險指標、相關性、期權對沖及壓力測試的全面投資組合分析"}, "kpi_pv_cad": {"en": "Portfolio Value (CAD)", "zh": "投資組合價值 (加元)"}, "kpi_pv_usd": {"en": "Portfolio Value (USD)", "zh": "投資組合價值 (美元)"}, "kpi_ann_ret": {"en": "Annualized Return", "zh": "年化回報"}, "kpi_sharpe": {"en": "Sharpe Ratio", "zh": "夏普比率"}, "kpi_max_dd": {"en": "Max Drawdown", "zh": "最大回撤"}, "kpi_beta": {"en": "Beta to SPY", "zh": "SPY Beta"}, "kpi_pos_opt": {"en": "Positions / Options", "zh": "持倉 / 期權"}, "kpi_delta_cad": {"en": "Option Delta (CAD)", "zh": "期權 Delta (加元)"}, "kpi_delta_usd": {"en": "Option Delta (USD)", "zh": "期權 Delta (美元)"}, "card_positions": {"en": "Positions", "zh": "持倉"}, "card_positions_desc": {"en": "All portfolio positions: stocks, ETFs, mutual funds, cash. Market values, weights, beta, and industry. Sortable columns.", "zh": "所有投資組合持倉：股票、ETF、互惠基金、現金。市值、權重、Beta及行業。可排序欄位。"}, "card_options": {"en": "Options", "zh": "期權"}, "card_options_desc": {"en": "All option contracts with delta exposure analysis. Calls, puts, spreads, and their hedging impact on the portfolio.", "zh": "所有期權合約及Delta敞口分析。認購、認沽期權及其對投資組合的對沖影響。"}, "card_correlation": {"en": "Correlation Matrix", "zh": "相關性矩陣"}, "card_correlation_desc": {"en": "Pairwise return correlations with heatmap. Click tickers to sort. Hover cells for ticker pair details.", "zh": "配對回報相關性熱圖。點擊股票代號排序。懸停查看配對詳情。"}, "card_risk": {"en": "Risk Metrics", "zh": "風險指標"}, "card_risk_desc": {"en": "VaR, Sharpe, Sortino, Calmar, Maximum Drawdown, Beta, option hedging impact. Hover cards for term explanations.", "zh": "VaR、夏普、索提諾、卡瑪比率、最大回撤、Beta、期權對沖影響。懸停查看術語解釋。"}, "card_stress": {"en": "Stress Testing", "zh": "壓力測試"}, "card_stress_desc": {"en": "Scenario analysis from -50% crash to +50% rally, showing both unhedged and option-hedged impacts with 1Y return context.", "zh": "從-50%崩盤到+50%上升的情景分析，顯示未對沖及期權對沖後的影響，附一年回報背景。"}, "card_exposure": {"en": "Sector, Currency & Account Exposure", "zh": "行業、貨幣及帳戶風險敞口"}, "card_exposure_desc": {"en": "Portfolio breakdown by sector allocation (incl. option notional), currency denomination, and brokerage account.", "zh": "按行業（含期權名義值）、貨幣及券商帳戶的投資組合分佈。"}, "title_positions": {"en": "Portfolio Positions", "zh": "投資組合持倉"}, "info_positions": {"en": "All positions including stocks, ETFs, mutual funds, and cash. Click column headers to sort.", "zh": "所有持倉包括股票、ETF、互惠基金及現金。點擊欄位標題排序。"}, "pos_total": {"en": "Total Positions", "zh": "持倉總數"}, "pos_pv_cad": {"en": "Portfolio Value (CAD)", "zh": "投資組合價值 (加元)"}, "pos_stocks": {"en": "Stocks", "zh": "股票"}, "pos_etfs": {"en": "ETFs", "zh": "ETF"}, "pos_mf": {"en": "Mutual Funds", "zh": "互惠基金"}, "pos_opt_contracts": {"en": "Option Contracts", "zh": "期權合約"}, "pos_cash": {"en": "Cash", "zh": "現金"}, "th_hash": {"en": "#", "zh": "#"}, "th_symbol": {"en": "Symbol", "zh": "代號"}, "th_account": {"en": "Account", "zh": "帳戶"}, "th_sector": {"en": "Sector", "zh": "行業"}, "th_type": {"en": "Type", "zh": "類型"}, "th_shares": {"en": "Shares", "zh": "股數"}, "th_price": {"en": "Price", "zh": "價格"}, "th_currency": {"en": "Currency", "zh": "貨幣"}, "th_mkt_cad": {"en": "Mkt Value (CAD)", "zh": "市值 (加元)"}, "th_mkt_usd": {"en": "Mkt Value (USD)", "zh": "市值 (美元)"}, "th_weight": {"en": "Weight", "zh": "權重"}, "th_weight_bar": {"en": "Weight Bar", "zh": "權重條"}, "th_beta": {"en": "Beta", "zh": "Beta"}, "th_industry": {"en": "Industry", "zh": "行業分類"}, "th_options": {"en": "Options", "zh": "期權"}, "title_options": {"en": "Options Positions & Delta Exposure", "zh": "期權持倉及Delta敞口"}, "info_options": {"en": "All option contracts with estimated delta exposure. Negative shares = short position. Click headers to sort.", "zh": "所有期權合約及估算Delta敞口。負數股數 = 沽空倉位。點擊標題排序。"}, "opt_total": {"en": "Total Contracts", "zh": "合約總數"}, "opt_calls": {"en": "Calls", "zh": "認購"}, "opt_puts": {"en": "Puts", "zh": "認沽"}, "opt_delta_usd": {"en": "Net Delta (USD)", "zh": "淨Delta (美元)"}, "opt_delta_cad": {"en": "Net Delta (CAD)", "zh": "淨Delta (加元)"}, "h2_opt_contracts": {"en": "Option Contracts", "zh": "期權合約"}, "h2_delta_exposure": {"en": "Delta Exposure by Position", "zh": "持倉Delta敞口"}, "th_expiry": {"en": "Expiry", "zh": "到期日"}, "th_strike": {"en": "Strike", "zh": "行使價"}, "th_pl_cad": {"en": "P/L (CAD)", "zh": "損益 (加元)"}, "th_notional_cad": {"en": "Notional (CAD)", "zh": "名義值 (加元)"}, "th_ul_price": {"en": "UL Price", "zh": "標的價格"}, "th_moneyness": {"en": "Moneyness", "zh": "價值狀態"}, "th_delta": {"en": "Delta", "zh": "Delta"}, "th_net_delta": {"en": "Net Delta", "zh": "淨Delta"}, "th_not_delta_cad": {"en": "Notional Delta (CAD)", "zh": "名義Delta (加元)"}, "title_correlation": {"en": "Portfolio Correlation Matrix", "zh": "投資組合相關性矩陣"}, "info_correlation": {"en": "Correlation of daily log returns over the past 12 months. Click any ticker header or row label to sort. Hover cells to see ticker pair.", "zh": "過去12個月每日對數回報的相關性。點擊任意股票代號標題或行標籤排序。懸停查看配對。"}, "th_ticker": {"en": "Ticker", "zh": "代號"}, "legend_strong_neg": {"en": "≤ -0.4 (Strong neg.)", "zh": "≤ -0.4 (強負相關)"}, "legend_low": {"en": "~0 (Low)", "zh": "~0 (低相關)"}, "legend_moderate": {"en": "~0.4-0.7 (Moderate)", "zh": "~0.4-0.7 (中度相關)"}, "legend_strong_pos": {"en": "≥ 0.7 (Strong pos.)", "zh": "≥ 0.7 (強正相關)"}, "title_risk": {"en": "Portfolio Risk Metrics", "zh": "投資組合風險指標"}, "info_risk": {"en": "Risk analytics based on 1-year daily return history. Risk-free rate: 4.3%. Hover KPI cards for explanations.", "zh": "基於一年每日回報歷史的風險分析。無風險利率：4.3%。懸停卡片查看術語解釋。"}, "sec_overview": {"en": "Portfolio Overview", "zh": "投資組合概覽"}, "sec_risk_adj": {"en": "Risk-Adjusted Returns", "zh": "風險調整回報"}, "sec_drawdown": {"en": "Drawdown & Market Risk", "zh": "回撤及市場風險"}, "sec_var": {"en": "Value at Risk", "zh": "風險價值"}, "sec_dist": {"en": "Distribution Shape", "zh": "分佈形態"}, "sec_hedge": {"en": "Option Hedging", "zh": "期權對沖"}, "m_total_pv": {"en": "Total Portfolio Value", "zh": "投資組合總值"}, "m_ann_ret": {"en": "Annualized Return", "zh": "年化回報"}, "m_ann_vol": {"en": "Annualized Volatility", "zh": "年化波動率"}, "m_sharpe": {"en": "Sharpe Ratio", "zh": "夏普比率"}, "m_sortino": {"en": "Sortino Ratio", "zh": "索提諾比率"}, "m_calmar": {"en": "Calmar Ratio", "zh": "卡瑪比率"}, "m_max_dd": {"en": "Maximum Drawdown", "zh": "最大回撤"}, "m_beta": {"en": "Beta to SPY", "zh": "SPY Beta"}, "m_var95": {"en": "VaR 95%", "zh": "風險價值 95%"}, "m_var99": {"en": "VaR 99%", "zh": "風險價值 99%"}, "m_cvar95": {"en": "CVaR 95%", "zh": "條件風險價值 95%"}, "m_var95d": {"en": "VaR 95% ($)", "zh": "風險價值 95% ($)"}, "m_var99d": {"en": "VaR 99% ($)", "zh": "風險價值 99% ($)"}, "m_skew": {"en": "Skewness", "zh": "偏度"}, "m_kurt": {"en": "Kurtosis", "zh": "峰度"}, "m_net_delta": {"en": "Net Delta (USD)", "zh": "淨Delta (美元)"}, "m_delta_exp": {"en": "Option Delta Exposure", "zh": "期權Delta敞口"}, "m_hedge_impact": {"en": "Option Hedging Impact", "zh": "期權對沖影響"}, "m_hvar95": {"en": "Hedged VaR 95%", "zh": "對沖後VaR 95%"}, "m_hvar99": {"en": "Hedged VaR 99%", "zh": "對沖後VaR 99%"}, "h2_ind_risk": {"en": "Individual Position Risk", "zh": "個別持倉風險"}, "th_ann_ret": {"en": "Ann. Return", "zh": "年化回報"}, "th_ann_vol": {"en": "Ann. Volatility", "zh": "年化波動率"}, "th_sharpe": {"en": "Sharpe", "zh": "夏普"}, "th_max_dd": {"en": "Max Drawdown", "zh": "最大回撤"}, "th_var95": {"en": "VaR 95%", "zh": "VaR 95%"}, "th_ticker_col": {"en": "Ticker", "zh": "代號"}, "tt_total_pv": {"en": "Total market value of all portfolio positions including stocks, ETFs, mutual funds, and cash in CAD.", "zh": "所有投資組合持倉的總市值，包括股票、ETF、互惠基金及現金（加元計）。"}, "tt_ann_ret": {"en": "The compound annual growth rate of the portfolio over the measurement period. Calculated from daily returns annualized to 252 trading days.", "zh": "投資組合在測量期間的複合年增長率。由每日回報年化至252個交易日計算。"}, "tt_ann_vol": {"en": "Standard deviation of portfolio returns annualized. Higher values indicate greater price fluctuation and uncertainty.", "zh": "投資組合回報的年化標準差。數值越高表示價格波動及不確定性越大。"}, "tt_sharpe": {"en": "Excess return per unit of total risk. Values above 1.0 are good, above 2.0 excellent. Calculated as (Return - Risk-Free Rate) / Volatility.", "zh": "每單位總風險的超額回報。數值高於1.0為良好，高於2.0為優秀。計算方式：（回報 - 無風險利率）/ 波動率。"}, "tt_sortino": {"en": "Similar to Sharpe but only penalizes downside volatility. Higher is better. More appropriate when returns are not symmetrically distributed.", "zh": "與夏普類似，但只懲罰下行波動。數值越高越好。當回報分佈不對稱時更為適用。"}, "tt_calmar": {"en": "Annualized return divided by maximum drawdown. Measures return earned per unit of peak-to-trough decline risk.", "zh": "年化回報除以最大回撤。衡量每單位峰值到谷底下降風險所獲得的回報。"}, "tt_max_dd": {"en": "Largest peak-to-trough decline in portfolio value. Represents the worst-case historical loss from any high point.", "zh": "投資組合價值最大峰值到谷底的下降。代表從任何高點的最壞歷史損失。"}, "tt_beta": {"en": "Portfolio sensitivity to S&P 500 (SPY) movements. Beta of 1.0 means the portfolio moves in line with the market. Below 1.0 = less volatile than market.", "zh": "投資組合對標普500（SPY）走勢的敏感度。Beta為1.0表示組合與市場同步。低於1.0 = 波動低於市場。"}, "tt_var95": {"en": "Value at Risk at 95% confidence. The maximum expected daily loss that should not be exceeded 95% of the time.", "zh": "95%信心水平的風險價值。95%時間內不應超過的最大預期每日損失。"}, "tt_var99": {"en": "Value at Risk at 99% confidence. The maximum expected daily loss exceeded only 1% of the time.", "zh": "99%信心水平的風險價值。僅1%時間超過的最大預期每日損失。"}, "tt_cvar95": {"en": "Conditional VaR (Expected Shortfall) at 95%. The average loss in the worst 5% of scenarios. More conservative than VaR.", "zh": "95%的條件VaR（預期虧損）。最差5%情景的平均損失。比VaR更保守。"}, "tt_var95d": {"en": "VaR 95% expressed as a dollar amount based on current portfolio value.", "zh": "以當前投資組合價值的金額表示的95% VaR。"}, "tt_var99d": {"en": "VaR 99% expressed as a dollar amount.", "zh": "以金額表示的99% VaR。"}, "tt_skew": {"en": "Measures asymmetry of return distribution. Negative skew means more frequent small gains but occasional large losses (fat left tail).", "zh": "衡量回報分佈的不對稱性。負偏度表示較頻繁的小收益但偶爾出現大損失（左尾肥厚）。"}, "tt_kurt": {"en": "Measures tail fatness of return distribution. Higher kurtosis means more extreme events than a normal distribution (fat tails).", "zh": "衡量回報分佈尾部的肥厚程度。峰度越高表示極端事件多於正態分佈（肥尾）。"}, "tt_net_delta": {"en": "Total directional dollar exposure from all option positions. Positive = net long exposure, negative = net short/hedged.", "zh": "所有期權持倉的總方向性美元敞口。正數 = 淨多頭敞口，負數 = 淨空頭/對沖。"}, "tt_delta_exp": {"en": "The estimated dollar-equivalent market exposure from option positions, converted to CAD.", "zh": "期權持倉的估算等值美元市場敞口，已轉換為加元。"}, "tt_hedge_impact": {"en": "The percentage impact of option delta on portfolio risk. Negative values indicate options are reducing portfolio risk.", "zh": "期權Delta對投資組合風險的百分比影響。負值表示期權正在降低組合風險。"}, "tt_hvar95": {"en": "VaR 95% after accounting for option hedging. Lower than unhedged VaR indicates effective hedging.", "zh": "計入期權對沖後的95% VaR。低於未對沖VaR表示對沖有效。"}, "tt_hvar99": {"en": "VaR 99% after accounting for option hedging.", "zh": "計入期權對沖後的99% VaR。"}, "title_stress": {"en": "Portfolio Stress Testing", "zh": "投資組合壓力測試"}, "info_stress": {"en": "Simulated impact of market-wide moves on portfolio value using beta, including option hedging effects.", "zh": "使用Beta模擬市場整體波動對投資組合價值的影響，包括期權對沖效果。"}, "st_pv": {"en": "Portfolio Value", "zh": "投資組合價值"}, "st_beta": {"en": "Portfolio Beta", "zh": "投資組合Beta"}, "st_delta_cad": {"en": "Option Delta (CAD)", "zh": "期權Delta (加元)"}, "st_1y_ret": {"en": "1Y Portfolio Return", "zh": "一年組合回報"}, "th_scenario": {"en": "Scenario", "zh": "情景"}, "th_mkt_move": {"en": "Market Move", "zh": "市場變動"}, "th_unhedged_pct": {"en": "Unhedged Impact (%)", "zh": "未對沖影響 (%)"}, "th_unhedged_d": {"en": "Unhedged Impact ($)", "zh": "未對沖影響 ($)"}, "th_opt_pnl": {"en": "Option Hedge P&L ($)", "zh": "期權對沖損益 ($)"}, "th_hedged_pct": {"en": "Hedged Impact (%)", "zh": "對沖後影響 (%)"}, "th_hedged_d": {"en": "Hedged Impact ($)", "zh": "對沖後影響 ($)"}, "th_est_nav": {"en": "Estimated NAV", "zh": "估計資產淨值"}, "sc_bear": {"en": "Bear Capitulation (-50%)", "zh": "熊市投降 (-50%)"}, "sc_deep": {"en": "Deep Crash (-40%)", "zh": "深度崩盤 (-40%)"}, "sc_major_crash": {"en": "Major Crash (-30%)", "zh": "重大暴跌 (-30%)"}, "sc_crash": {"en": "Market Crash (-20%)", "zh": "市場崩盤 (-20%)"}, "sc_severe": {"en": "Severe Correction (-15%)", "zh": "嚴重調整 (-15%)"}, "sc_major_corr": {"en": "Major Correction (-10%)", "zh": "大幅修正 (-10%)"}, "sc_minor": {"en": "Minor Correction (-5%)", "zh": "小幅修正 (-5%)"}, "sc_flat": {"en": "Flat (0%)", "zh": "持平 (0%)"}, "sc_modest": {"en": "Modest Rally (+5%)", "zh": "小幅上升 (+5%)"}, "sc_moderate": {"en": "Moderate Rally (+10%)", "zh": "溫和上升 (+10%)"}, "sc_strong": {"en": "Strong Rally (+15%)", "zh": "強勁上升 (+15%)"}, "sc_bull": {"en": "Bull Run (+20%)", "zh": "牛市行情 (+20%)"}, "sc_surge": {"en": "Major Surge (+30%)", "zh": "大幅飆升 (+30%)"}, "sc_euphoric": {"en": "Euphoric Rally (+50%)", "zh": "狂熱上升 (+50%)"}, "title_exposure": {"en": "Portfolio Exposure Analysis", "zh": "投資組合風險敞口分析"}, "info_exposure": {"en": "Breakdown by sector (including option notional), currency, and brokerage account.", "zh": "按行業（含期權名義值）、貨幣及券商帳戶的分佈。"}, "h2_sector": {"en": "Sector Exposure", "zh": "行業風險敞口"}, "h2_currency": {"en": "Currency Exposure", "zh": "貨幣風險敞口"}, "h2_account": {"en": "Account Exposure", "zh": "帳戶風險敞口"}, "th_value_cad": {"en": "Value (CAD)", "zh": "價值 (加元)"}, "th_value_usd": {"en": "Value (USD)", "zh": "價值 (美元)"}};
+
+    var langKey = 'portfolio_language';
+    function getLang() { return localStorage.getItem(langKey) || 'en'; }
+    window.applyLanguage = function() {
+        var lang = getLang();
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            var k = el.getAttribute('data-i18n');
+            if (T[k] && T[k][lang]) el.textContent = T[k][lang];
+        });
+        document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+            var k = el.getAttribute('data-i18n-html');
+            if (T[k] && T[k][lang]) el.innerHTML = T[k][lang];
+        });
+        var langBtn = document.getElementById('lang-btn');
+        if (langBtn) langBtn.textContent = lang === 'en' ? '中' : 'En';
+    };
+    window.toggleLanguage = function() {
+        var lang = getLang() === 'en' ? 'zh' : 'en';
+        localStorage.setItem(langKey, lang);
+        applyLanguage();
+    };
+    document.addEventListener('DOMContentLoaded', applyLanguage);
+})();
+</script>
+
+<h1 data-i18n="title_risk">Portfolio Risk Metrics</h1>
+<p class="info" data-i18n="info_risk">Risk analytics based on 1-year daily return history. Risk-free rate: 4.3%. Hover KPI cards for explanations.</p>
+<div class="section-label" data-i18n="sec_overview">Portfolio Overview</div>
+<div class="kpi-grid">
+    <div class="kpi-card neut">
+        
+        <div class="kpi-label"><span data-i18n="m_total_pv_cad">Total Portfolio Value (CAD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut dollar-amount">$999,037</div>
+    </div>
+    <div class="kpi-card neut">
+        
+        <div class="kpi-label"><span data-i18n="m_total_pv_usd">Total Portfolio Value (USD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut dollar-amount">$730,183</div>
+    </div>
+    <div class="kpi-card pos">
+        <div class="kpi-tooltip" data-i18n-html="tt_ann_ret">The average daily return extrapolated to a full year (252 trading days). Represents the expected yearly return if current performance continues.</div>
+        <div class="kpi-label"><span data-i18n="m_ann_ret">Annualized Return</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value pos">57.30%</div>
+    </div>
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_ann_vol">Standard deviation of daily returns scaled to annual. Measures how much the portfolio value fluctuates. Higher = more risk.</div>
+        <div class="kpi-label"><span data-i18n="m_ann_vol">Annualized Volatility</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut">26.64%</div>
+    </div>
+</div>
+<div class="section-label" data-i18n="sec_risk_adj">Risk-Adjusted Returns</div>
+<div class="kpi-grid">
+    <div class="kpi-card pos">
+        <div class="kpi-tooltip" data-i18n-html="tt_sharpe">Risk-adjusted return: (Portfolio Return - Risk-Free Rate) / Volatility. Above 1.0 is good, above 2.0 is very good. Measures excess return per unit of total risk.</div>
+        <div class="kpi-label"><span data-i18n="m_sharpe">Sharpe Ratio</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value pos">1.989</div>
+    </div>
+    <div class="kpi-card pos">
+        <div class="kpi-tooltip" data-i18n-html="tt_sortino">Like Sharpe but only penalizes downside volatility. (Return - Risk-Free Rate) / Downside Deviation. Higher is better. Ignores upside 'risk'.</div>
+        <div class="kpi-label"><span data-i18n="m_sortino">Sortino Ratio</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value pos">2.345</div>
+    </div>
+    <div class="kpi-card pos">
+        <div class="kpi-tooltip" data-i18n-html="tt_calmar">Annualized Return / Maximum Drawdown. Measures return per unit of drawdown risk. Higher = better risk-adjusted returns. Above 3.0 is excellent.</div>
+        <div class="kpi-label"><span data-i18n="m_calmar">Calmar Ratio</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value pos">3.452</div>
+    </div>
+</div>
+<div class="section-label" data-i18n="sec_drawdown">Drawdown & Market Risk</div>
+<div class="kpi-grid">
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_max_dd">The largest peak-to-trough decline in portfolio value. Measures the worst-case loss from a high point. E.g., -15% means you lost 15% from a peak.</div>
+        <div class="kpi-label"><span data-i18n="m_max_dd">Maximum Drawdown</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-16.60%</div>
+    </div>
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_beta">Portfolio sensitivity to S&P 500 (SPY) movements. Beta=1 means the portfolio moves with the market. Beta<1 = less volatile, Beta>1 = more volatile than market.</div>
+        <div class="kpi-label"><span data-i18n="m_beta">Beta to SPY</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut">0.607</div>
+    </div>
+</div>
+<div class="section-label" data-i18n="sec_var">Value at Risk</div>
+<div class="kpi-grid">
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_var95">Value at Risk at 95%% confidence: the maximum daily loss expected 95%% of the time. There's a 5%% chance the daily loss exceeds this amount.</div>
+        <div class="kpi-label"><span data-i18n="m_var95">VaR 95%</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-2.46%</div>
+    </div>
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_var99">Value at Risk at 99%% confidence: the maximum daily loss expected 99%% of the time. More conservative than VaR 95%%.</div>
+        <div class="kpi-label"><span data-i18n="m_var99">VaR 99%</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-5.27%</div>
+    </div>
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_cvar95">Conditional VaR (Expected Shortfall): the average loss on days when losses exceed VaR 95%%. Measures 'how bad it gets' in the worst 5%% of days.</div>
+        <div class="kpi-label"><span data-i18n="m_cvar95">CVaR 95%</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-4.30%</div>
+    </div>
+    <div class="kpi-card neg">
+        
+        <div class="kpi-label"><span data-i18n="m_var95_cad">VaR 95% (CAD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg dollar-amount">$24,562</div>
+    </div>
+    <div class="kpi-card neg">
+        
+        <div class="kpi-label"><span data-i18n="m_var95_usd">VaR 95% (USD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg dollar-amount">$17,952</div>
+    </div>
+    <div class="kpi-card neg">
+        
+        <div class="kpi-label"><span data-i18n="m_var99_cad">VaR 99% (CAD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg dollar-amount">$52,670</div>
+    </div>
+    <div class="kpi-card neg">
+        
+        <div class="kpi-label"><span data-i18n="m_var99_usd">VaR 99% (USD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg dollar-amount">$38,496</div>
+    </div>
+</div>
+<div class="section-label" data-i18n="sec_dist">Distribution Shape</div>
+<div class="kpi-grid">
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_skew">Measures asymmetry of returns. Negative skew = more extreme losses than gains (fat left tail). Positive = more extreme gains. Zero = symmetric.</div>
+        <div class="kpi-label"><span data-i18n="m_skew">Skewness</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut">-0.873</div>
+    </div>
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_kurt">Measures 'fat tails' - how likely extreme events are vs. normal distribution. Higher kurtosis = more frequent extreme moves. Normal distribution = 3.</div>
+        <div class="kpi-label"><span data-i18n="m_kurt">Kurtosis</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut">3.552</div>
+    </div>
+</div>
+<div class="section-label" data-i18n="sec_hedge">Option Hedging</div>
+<div class="kpi-grid">
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_net_delta">Total notional delta exposure from options in USD. Represents the stock-equivalent directional bet from all option positions combined.</div>
+        <div class="kpi-label"><span data-i18n="m_net_delta_usd">Net Delta (USD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut dollar-amount">$-277,013</div>
+    </div>
+    <div class="kpi-card neut">
+        
+        <div class="kpi-label"><span data-i18n="m_net_delta_cad">Net Delta (CAD)</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut dollar-amount">$-379,010</div>
+    </div>
+    <div class="kpi-card neut">
+        <div class="kpi-tooltip" data-i18n-html="tt_hedge_impact">The ratio of option delta exposure to portfolio value. Shows how much options modify the portfolio's effective market exposure.</div>
+        <div class="kpi-label"><span data-i18n="m_hedge_impact">Option Hedging Impact</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neut">-37.94%</div>
+    </div>
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_hvar95">Value at Risk adjusted for option hedging. Option positions (especially protective puts) can reduce downside risk.</div>
+        <div class="kpi-label"><span data-i18n="m_hvar95">Hedged VaR 95%</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-1.53%</div>
+    </div>
+    <div class="kpi-card neg">
+        <div class="kpi-tooltip" data-i18n-html="tt_hvar99">Value at Risk at 99%% adjusted for option hedging effects.</div>
+        <div class="kpi-label"><span data-i18n="m_hvar99">Hedged VaR 99%</span> <span class="help-icon">&#9432;</span></div>
+        <div class="kpi-value neg">-3.27%</div>
+    </div>
+</div>
+<h2 data-i18n="h2_ind_risk">Individual Position Risk</h2>
+<table id="ind-risk-table">
+<thead><tr><th onclick="sortTable('ind-risk-table',0,false)" data-i18n="th_ticker_col">Ticker</th><th onclick="sortTable('ind-risk-table',1,true)" data-i18n="th_ann_ret">Ann. Return</th><th onclick="sortTable('ind-risk-table',2,true)" data-i18n="th_ann_vol">Ann. Volatility</th><th onclick="sortTable('ind-risk-table',3,true)" data-i18n="th_sharpe">Sharpe</th><th onclick="sortTable('ind-risk-table',4,true)" data-i18n="th_max_dd">Max Drawdown</th><th onclick="sortTable('ind-risk-table',5,true)" data-i18n="th_var95">VaR 95%</th><th onclick="sortTable('ind-risk-table',6,true)" data-i18n="th_beta">Beta</th></tr></thead>
+<tbody>
+<tr>
+    <td><strong>HL</strong></td>
+    <td class="positive" data-val="1.395009">139.50%</td>
+    <td data-val="0.708548">70.85%</td>
+    <td data-val="1.908139">1.908</td>
+    <td class="negative" data-val="-0.368852">-36.89%</td>
+    <td class="negative" data-val="-0.060328">-6.03%</td>
+    <td data-val="0.9305765436774125">0.93</td>
+</tr>
+<tr>
+    <td><strong>GBUG</strong></td>
+    <td class="positive" data-val="0.920280">92.03%</td>
+    <td data-val="0.455128">45.51%</td>
+    <td data-val="1.927547">1.928</td>
+    <td class="negative" data-val="-0.210086">-21.01%</td>
+    <td class="negative" data-val="-0.041046">-4.10%</td>
+    <td data-val="0.5220695356299937">0.52</td>
+</tr>
+<tr>
+    <td><strong>CCO</strong></td>
+    <td class="positive" data-val="0.871206">87.12%</td>
+    <td data-val="0.503670">50.37%</td>
+    <td data-val="1.644343">1.644</td>
+    <td class="negative" data-val="-0.255145">-25.51%</td>
+    <td class="negative" data-val="-0.046295">-4.63%</td>
+    <td data-val="1.101">1.10</td>
+</tr>
+<tr>
+    <td><strong>PAAS</strong></td>
+    <td class="positive" data-val="0.867517">86.75%</td>
+    <td data-val="0.553951">55.40%</td>
+    <td data-val="1.488431">1.488</td>
+    <td class="negative" data-val="-0.220306">-22.03%</td>
+    <td class="negative" data-val="-0.045802">-4.58%</td>
+    <td data-val="1.24">1.24</td>
+</tr>
+<tr>
+    <td><strong>SLV</strong></td>
+    <td class="positive" data-val="0.844878">84.49%</td>
+    <td data-val="0.560051">56.01%</td>
+    <td data-val="1.431794">1.432</td>
+    <td class="negative" data-val="-0.436300">-43.63%</td>
+    <td class="negative" data-val="-0.035684">-3.57%</td>
+    <td data-val="0.5299383883235025">0.53</td>
+</tr>
+<tr>
+    <td><strong>WPM</strong></td>
+    <td class="positive" data-val="0.695811">69.58%</td>
+    <td data-val="0.390356">39.04%</td>
+    <td data-val="1.672345">1.672</td>
+    <td class="negative" data-val="-0.179110">-17.91%</td>
+    <td class="negative" data-val="-0.030308">-3.03%</td>
+    <td data-val="0.982">0.98</td>
+</tr>
+<tr>
+    <td><strong>FNV</strong></td>
+    <td class="positive" data-val="0.560237">56.02%</td>
+    <td data-val="0.330559">33.06%</td>
+    <td data-val="1.564736">1.565</td>
+    <td class="negative" data-val="-0.175395">-17.54%</td>
+    <td class="negative" data-val="-0.030154">-3.02%</td>
+    <td data-val="0.829">0.83</td>
+</tr>
+<tr>
+    <td><strong>AMD</strong></td>
+    <td class="positive" data-val="0.550135">55.01%</td>
+    <td data-val="0.620346">62.03%</td>
+    <td data-val="0.817504">0.818</td>
+    <td class="negative" data-val="-0.330580">-33.06%</td>
+    <td class="negative" data-val="-0.054822">-5.48%</td>
+    <td data-val="1.949">1.95</td>
+</tr>
+<tr>
+    <td><strong>FCX</strong></td>
+    <td class="positive" data-val="0.491457">49.15%</td>
+    <td data-val="0.511854">51.19%</td>
+    <td data-val="0.876142">0.876</td>
+    <td class="negative" data-val="-0.337298">-33.73%</td>
+    <td class="negative" data-val="-0.043903">-4.39%</td>
+    <td data-val="1.434">1.43</td>
+</tr>
+<tr>
+    <td><strong>GOOG</strong></td>
+    <td class="positive" data-val="0.483160">48.32%</td>
+    <td data-val="0.302615">30.26%</td>
+    <td data-val="1.454522">1.455</td>
+    <td class="negative" data-val="-0.220205">-22.02%</td>
+    <td class="negative" data-val="-0.025284">-2.53%</td>
+    <td data-val="1.086">1.09</td>
+</tr>
+<tr>
+    <td><strong>XOM</strong></td>
+    <td class="positive" data-val="0.341669">34.17%</td>
+    <td data-val="0.246952">24.70%</td>
+    <td data-val="1.209423">1.209</td>
+    <td class="negative" data-val="-0.166906">-16.69%</td>
+    <td class="negative" data-val="-0.025640">-2.56%</td>
+    <td data-val="0.358">0.36</td>
+</tr>
+<tr>
+    <td><strong>NVDA</strong></td>
+    <td class="positive" data-val="0.296947">29.69%</td>
+    <td data-val="0.438066">43.81%</td>
+    <td data-val="0.579699">0.580</td>
+    <td class="negative" data-val="-0.346100">-34.61%</td>
+    <td class="negative" data-val="-0.042411">-4.24%</td>
+    <td data-val="2.314">2.31</td>
+</tr>
+<tr>
+    <td><strong>XIU</strong></td>
+    <td class="positive" data-val="0.253022">25.30%</td>
+    <td data-val="0.143540">14.35%</td>
+    <td data-val="1.463168">1.463</td>
+    <td class="negative" data-val="-0.114554">-11.46%</td>
+    <td class="negative" data-val="-0.014125">-1.41%</td>
+    <td data-val="0.60114544550366">0.60</td>
+</tr>
+<tr>
+    <td><strong>CVX</strong></td>
+    <td class="positive" data-val="0.198179">19.82%</td>
+    <td data-val="0.251437">25.14%</td>
+    <td data-val="0.617167">0.617</td>
+    <td class="negative" data-val="-0.216335">-21.63%</td>
+    <td class="negative" data-val="-0.022930">-2.29%</td>
+    <td data-val="0.672">0.67</td>
+</tr>
+<tr>
+    <td><strong>TSLA</strong></td>
+    <td class="positive" data-val="0.130164">13.02%</td>
+    <td data-val="0.608695">60.87%</td>
+    <td data-val="0.143198">0.143</td>
+    <td class="negative" data-val="-0.408777">-40.88%</td>
+    <td class="negative" data-val="-0.054835">-5.48%</td>
+    <td data-val="1.887">1.89</td>
+</tr>
+<tr>
+    <td><strong>SPY</strong></td>
+    <td class="positive" data-val="0.123257">12.33%</td>
+    <td data-val="0.191120">19.11%</td>
+    <td data-val="0.419928">0.420</td>
+    <td class="negative" data-val="-0.188708">-18.87%</td>
+    <td class="negative" data-val="-0.016812">-1.68%</td>
+    <td data-val="1.0">1.00</td>
+</tr>
+<tr>
+    <td><strong>QQQ</strong></td>
+    <td class="positive" data-val="0.119490">11.95%</td>
+    <td data-val="0.230176">23.02%</td>
+    <td data-val="0.332309">0.332</td>
+    <td class="negative" data-val="-0.230569">-23.06%</td>
+    <td class="negative" data-val="-0.021124">-2.11%</td>
+    <td data-val="1.1704388483841897">1.17</td>
+</tr>
+<tr>
+    <td><strong>AAPL</strong></td>
+    <td class="positive" data-val="0.079944">7.99%</td>
+    <td data-val="0.317449">31.74%</td>
+    <td data-val="0.116377">0.116</td>
+    <td class="negative" data-val="-0.312486">-31.25%</td>
+    <td class="negative" data-val="-0.032212">-3.22%</td>
+    <td data-val="1.107">1.11</td>
+</tr>
+<tr>
+    <td><strong>TLT</strong></td>
+    <td class="positive" data-val="0.057963">5.80%</td>
+    <td data-val="0.114509">11.45%</td>
+    <td data-val="0.130673">0.131</td>
+    <td class="negative" data-val="-0.094152">-9.42%</td>
+    <td class="negative" data-val="-0.010526">-1.05%</td>
+    <td data-val="0.04524663695477747">0.05</td>
+</tr>
+<tr>
+    <td><strong>ETHA</strong></td>
+    <td class="negative" data-val="-0.338670">-33.87%</td>
+    <td data-val="0.753667">75.37%</td>
+    <td data-val="-0.506418">-0.506</td>
+    <td class="negative" data-val="-0.661445">-66.14%</td>
+    <td class="negative" data-val="-0.071548">-7.15%</td>
+    <td data-val="1.8539204326817553">1.85</td>
+</tr>
+<tr>
+    <td><strong>IBIT</strong></td>
+    <td class="negative" data-val="-0.371124">-37.11%</td>
+    <td data-val="0.460025">46.00%</td>
+    <td data-val="-0.900220">-0.900</td>
+    <td class="negative" data-val="-0.516920">-51.69%</td>
+    <td class="negative" data-val="-0.041423">-4.14%</td>
+    <td data-val="1.0438908854788456">1.04</td>
+</tr>
+<tr>
+    <td><strong>TRI</strong></td>
+    <td class="negative" data-val="-0.707222">-70.72%</td>
+    <td data-val="0.321569">32.16%</td>
+    <td data-val="-2.333004">-2.333</td>
+    <td class="negative" data-val="-0.624617">-62.46%</td>
+    <td class="negative" data-val="-0.032440">-3.24%</td>
+    <td data-val="0.296">0.30</td>
+</tr>
+</tbody></table>
+
+<script>
+function sortTable(tableId, colIdx, isNumeric) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const header = table.querySelectorAll('thead th')[colIdx];
+
+    // Determine current direction
+    const curDir = header.getAttribute('data-sort-dir') || 'none';
+    const newDir = curDir === 'asc' ? 'desc' : 'asc';
+
+    // Clear all headers
+    table.querySelectorAll('thead th').forEach(th => {
+        th.setAttribute('data-sort-dir', 'none');
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.remove();
+    });
+
+    header.setAttribute('data-sort-dir', newDir);
+    const arrow = document.createElement('span');
+    arrow.className = 'sort-arrow';
+    arrow.style.marginLeft = '4px';
+    arrow.style.fontSize = '10px';
+    arrow.textContent = newDir === 'asc' ? '\u25B2' : '\u25BC';
+    header.appendChild(arrow);
+
+    rows.sort((a, b) => {
+        let aVal = a.cells[colIdx].getAttribute('data-val') || a.cells[colIdx].textContent.trim();
+        let bVal = b.cells[colIdx].getAttribute('data-val') || b.cells[colIdx].textContent.trim();
+        if (isNumeric) {
+            aVal = parseFloat(aVal.replace(/[$,%+]/g, '')) || 0;
+            bVal = parseFloat(bVal.replace(/[$,%+]/g, '')) || 0;
+        } else {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+        }
+        if (aVal < bVal) return newDir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return newDir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
+}
+</script>
+<p class="timestamp"><span data-i18n="generated">Generated:</span> 2026-02-19 00:47:49</p></body></html>
