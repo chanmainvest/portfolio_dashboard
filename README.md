@@ -1,5 +1,7 @@
 # Portfolio Dashboard
 
+**Live demo:** [chanmainvest.github.io/portfolio_dashboard](https://chanmainvest.github.io/portfolio_dashboard/)
+
 Interactive portfolio analytics dashboard that reads an Excel workbook, fetches live market data from Yahoo Finance, and generates Bloomberg-style HTML reports.
 
 ## Features
