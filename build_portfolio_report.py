@@ -570,6 +570,7 @@ TRANSLATIONS = {
     "privacy_hide": {"en": "$ Hide", "zh": "$ 隱藏"},
     "privacy_show": {"en": "$ Show", "zh": "$ 顯示"},
     "generated": {"en": "Generated:", "zh": "生成時間:"},
+    "disclaimer": {"en": "Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.", "zh": "免責聲明：本儀表板僅供資訊及教育用途，不構成任何投資建議。"},
     "title_dashboard": {"en": "Stock Portfolio Analytics Dashboard", "zh": "投資組合分析儀表板"},
     "desc_dashboard": {"en": "Comprehensive portfolio analysis with risk metrics, correlations, option hedging, and stress testing", "zh": "涵蓋風險指標、相關性、期權對沖及壓力測試的全面投資組合分析"},
     "kpi_pv_cad": {"en": "Portfolio Value (CAD)", "zh": "投資組合價值 (加元)"},
@@ -1862,6 +1863,7 @@ def generate_index_html(portfolio_value, metrics, num_positions, num_options, us
     .card h2 {{ margin: 0 0 10px 0; font-size: 18px; color: #E0E0E0; border: none; padding: 0; }}
     .card p {{ margin: 0; color: #8899AA; font-size: 13px; line-height: 1.5; }}
     .card .icon {{ font-size: 36px; margin-bottom: 12px; }}
+    .disclaimer {{ margin-top: 18px; color: #8899AA; font-size: 12px; }}
 </style>
 </head>
 <body>
@@ -1915,6 +1917,7 @@ def generate_index_html(portfolio_value, metrics, num_positions, num_options, us
         <p data-i18n="card_exposure_desc">Portfolio breakdown by sector allocation (incl. option notional), currency denomination, and brokerage account.</p>
     </a>
 </div>
+<p class="disclaimer" data-i18n="disclaimer">Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.</p>
 <p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
 </body></html>"""
     return html

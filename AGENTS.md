@@ -493,7 +493,7 @@ When you run `build_portfolio_report.py` against `sample_portfolio.xlsx`, it gen
 
 | File | Description |
 |------|-------------|
-| `index.html` | **Dashboard** — Landing page with summary KPIs (portfolio value CAD/USD, annualized return, Sharpe ratio, max drawdown, beta, option delta CAD/USD) and card links to all other pages. |
+| `index.html` | **Dashboard** — Landing page with summary KPIs (portfolio value CAD/USD, annualized return, Sharpe ratio, max drawdown, beta, option delta CAD/USD), card links to all other pages, and a footer disclaimer stating the content is informational/educational only and not investment advice. |
 | `positions.html` | **Positions** — All holdings (stocks, ETFs, cash) with market values (CAD and USD), portfolio weights, beta, industry, and option badge counts. **Option-only tickers** (symbols with options but 0 shares) appear with a purple "opts only" badge. **Sortable columns** — click any header to sort ascending/descending. Privacy mode hides share counts and dollar amounts. |
 | `options.html` | **Options** — All option contracts with live option prices fetched from yfinance option chains, underlying price, and calculated contract value (opt price x shares in CAD). No P/L or notional columns — replaced by Opt Price and Contract Value. Includes a **delta exposure table** showing estimated delta, net delta, and notional delta (CAD) per contract. KPI summary includes total options holding value. Sortable columns. |
 | `correlation_matrix.html` | **Correlation Matrix** — Pairwise return correlation heatmap. **Click any ticker** in the header or row labels to sort the matrix by correlation to that ticker. **Hover any cell** to see a tooltip showing the two tickers and their correlation value. |
@@ -520,6 +520,7 @@ Fundamentals (sector, industry, beta, type) are fetched live from yfinance for a
 ### Interactive Features
 
 - **Language Toggle**: Click the "中" button in the top navigation bar to switch the entire UI to Hong Kong Traditional Chinese (繁體中文). All page titles, section headers, KPI labels, table column headers, metric names, tooltips, stress scenario names, dashboard card titles/descriptions, and navigation links are translated. Click "En" to switch back to English. Language preference persists across pages via localStorage.
+- **Investment Disclaimer**: Dashboard page includes a footer disclaimer clarifying the report is for informational and educational purposes only and is not investment advice (language-aware).
 - **Privacy Toggle**: Click the "$ Hide" button in the top navigation bar to hide all dollar amounts and share counts across every page (only percentages and ratios remain visible). State persists across pages via localStorage. Click "$ Show" to reveal amounts again. Button text follows the current language.
 - **Sortable Tables**: All position/risk/option tables support click-to-sort on column headers with ascending/descending toggle and sort arrow indicators.
 - **Correlation Sort**: Click a ticker in the correlation matrix to sort all rows (or columns) by that ticker's correlation values.
