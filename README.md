@@ -46,3 +46,13 @@ Fundamentals (sector, industry, beta) are fetched from yfinance — no Fundament
 
 - Python ≥ 3.11
 - numpy, pandas, yfinance, scipy, openpyxl (managed via `uv sync`)
+
+## Disclaimer
+
+This project is provided for educational and informational purposes only and does **not** constitute investment, financial, legal, or tax advice.
+
+Nothing in this repository (including code, reports, examples, outputs, comments, or documentation) is a recommendation, solicitation, endorsement, or offer to buy or sell any security, option, or other financial instrument.
+
+You are solely responsible for your own investment decisions. Always conduct your own research and consult a licensed financial advisor or other qualified professional before making any investment decision.
+
+Past performance is not indicative of future results. Markets are volatile, and all investing involves risk, including the possible loss of principal.
