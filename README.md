@@ -2,10 +2,11 @@
 
 **Live demo:** [chanmainvest.github.io/portfolio_dashboard](https://chanmainvest.github.io/portfolio_dashboard/)
 
-Interactive portfolio analytics dashboard that reads an Excel workbook, fetches live market data from Yahoo Finance, and generates Bloomberg-style HTML reports.
+Interactive portfolio analytics dashboard that reads an Excel workbook, fetches live market data from Yahoo Finance, and generates a Bloomberg-style single-page HTML report.
 
 ## Features
 
+- **Single-page app (SPA)** — All analytics tabs in one `index.html` with hash-based navigation (`#dashboard`, `#positions`, `#options`, `#correlation`, `#risk`, `#stress`, `#exposure`)
 - **Positions** — Stock/ETF/cash holdings with market values (CAD/USD), weights, beta, industry
 - **Options** — Live option prices from yfinance chains, contract values, delta exposure analysis
 - **Correlation Matrix** — Interactive heatmap with click-to-sort and hover tooltips
@@ -38,9 +39,9 @@ Fundamentals (sector, industry, beta) are fetched from yfinance — no Fundament
 
 ## Output
 
-7 HTML reports + 1 JSON file in the workspace root:
+1 HTML report + 1 JSON file in the workspace root:
 
-`index.html` · `positions.html` · `options.html` · `correlation_matrix.html` · `risk_metrics.html` · `stress_testing.html` · `sector_exposure.html` · `risk_metrics.json`
+`index.html` · `risk_metrics.json`
 
 ## Dependencies
 
