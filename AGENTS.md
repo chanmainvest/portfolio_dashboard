@@ -1,6 +1,6 @@
 ---
 name: Stock Portfolio Tracker
-description: Build institutional-grade portfolio analytics HTML reports from an Excel workbook — risk metrics, correlation matrix, stress testing, sector exposure, and options delta hedging.
+description: Build an institutional-grade single-page portfolio analytics HTML report from an Excel workbook — risk metrics, correlation matrix, stress testing, sector exposure, and options delta hedging.
 tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'duckduckgo/*', 'agent', 'todo']
 ---
 
@@ -487,19 +487,23 @@ Task Windows Mac Open terminal Search "cmd" Search "Terminal" Navigate to Deskto
 
 ## Generated Output Reference
 
-When you run `build_portfolio_report.py` against `sample_portfolio.xlsx`, it generates **7 interactive HTML reports** and **1 JSON file** in the workspace root:
+When you run `build_portfolio_report.py` against `sample_portfolio.xlsx`, it generates **1 single-page HTML report** and **1 JSON file** in the workspace root.
 
-### HTML Reports
+> **Package Manager:** This project uses **uv** for dependency management. All commands should be run via `uv run python ...`. Install uv from <https://docs.astral.sh/uv/>.
 
-| File | Description |
-|------|-------------|
-| `index.html` | **Dashboard** — Landing page with summary KPIs (portfolio value CAD/USD, annualized return, Sharpe ratio, max drawdown, beta, option delta CAD/USD), card links to all other pages, and a footer disclaimer stating the content is informational/educational only and not investment advice. |
-| `positions.html` | **Positions** — All holdings (stocks, ETFs, cash) with market values (CAD and USD), portfolio weights, beta, industry, and option badge counts. **Option-only tickers** (symbols with options but 0 shares) appear with a purple "opts only" badge. **Sortable columns** — click any header to sort ascending/descending. Privacy mode hides share counts and dollar amounts. |
-| `options.html` | **Options** — All option contracts with live option prices fetched from yfinance option chains, underlying price, and calculated contract value (opt price x shares in CAD). No P/L or notional columns — replaced by Opt Price and Contract Value. Includes a **delta exposure table** showing estimated delta, net delta, and notional delta (CAD) per contract. KPI summary includes total options holding value. Sortable columns. |
-| `correlation_matrix.html` | **Correlation Matrix** — Pairwise return correlation heatmap. **Click any ticker** in the header or row labels to sort the matrix by correlation to that ticker. **Hover any cell** to see a tooltip showing the two tickers and their correlation value. |
-| `risk_metrics.html` | **Risk Metrics** — KPI cards grouped into sections (Portfolio Overview, Risk-Adjusted Returns, Drawdown & Market Risk, Value at Risk, Distribution Shape, Option Hedging). Portfolio value shown in both CAD and USD. VaR ($) shown in both CAD and USD. Net Delta shown in both USD and CAD. **Hover any KPI card** for a plain-English explanation of the financial term. Individual position risk table with beta computed from SPY returns for tickers where yfinance does not provide it (ETFs, crypto). Sortable. |
-| `stress_testing.html` | **Stress Testing** — 14 scenarios from -50% depression to +50% mania showing unhedged impact, option hedge P&L, hedged impact, and estimated NAV. Summary box shows portfolio value and option delta in both CAD and USD. **USD/CAD toggle button** on the scenario table switches all dollar values between CAD and USD. Displays 1Y portfolio return for context. |
-| `sector_exposure.html` | **Exposure Analysis** — Three-column layout showing sector, currency, and brokerage account breakdowns with weight bars. All three views include option contract values (opt price × shares) alongside stock holdings — not the inflated notional value. Sector/industry data fetched from yfinance. Sector table shows both CAD and USD columns. |
+### Single-Page HTML Report
+
+The script produces a single `index.html` file (~160 KB) containing all analytics as a **tab-based single-page application (SPA)**. Navigation between sections uses JavaScript tab switching with hash-based URLs (e.g., `#dashboard`, `#positions`, `#options`, `#correlation`, `#risk`, `#stress`, `#exposure`).
+
+| Tab (hash) | Description |
+|------------|-------------|
+| `#dashboard` | **Dashboard** — Landing page with summary KPIs (portfolio value CAD/USD, annualized return, Sharpe ratio, max drawdown, beta, option delta CAD/USD), card links to all other tabs, and a footer disclaimer stating the content is informational/educational only and not investment advice. |
+| `#positions` | **Positions** — All holdings (stocks, ETFs, cash) with market values (CAD and USD), portfolio weights, beta, industry, and option badge counts. **Option-only tickers** (symbols with options but 0 shares) appear with a purple "opts only" badge. **Sortable columns** — click any header to sort ascending/descending. Privacy mode hides share counts and dollar amounts. |
+| `#options` | **Options** — All option contracts with live option prices fetched from yfinance option chains, underlying price, and calculated contract value (opt price x shares in CAD). No P/L or notional columns — replaced by Opt Price and Contract Value. Includes a **delta exposure table** showing estimated delta, net delta, and notional delta (CAD) per contract. KPI summary includes total options holding value. Sortable columns. |
+| `#correlation` | **Correlation Matrix** — Pairwise return correlation heatmap. **Click any ticker** in the header or row labels to sort the matrix by correlation to that ticker. **Hover any cell** to see a tooltip showing the two tickers and their correlation value. |
+| `#risk` | **Risk Metrics** — KPI cards grouped into sections (Portfolio Overview, Risk-Adjusted Returns, Drawdown & Market Risk, Value at Risk, Distribution Shape, Option Hedging). Portfolio value shown in both CAD and USD. VaR ($) shown in both CAD and USD. Net Delta shown in both USD and CAD. **Hover any KPI card** for a plain-English explanation of the financial term. Individual position risk table with beta computed from SPY returns for tickers where yfinance does not provide it (ETFs, crypto). Sortable. |
+| `#stress` | **Stress Testing** — 14 scenarios from -50% depression to +50% mania showing unhedged impact, option hedge P&L, hedged impact, and estimated NAV. Summary box shows portfolio value and option delta in both CAD and USD. **USD/CAD toggle button** on the scenario table switches all dollar values between CAD and USD. Displays 1Y portfolio return for context. |
+| `#exposure` | **Exposure Analysis** — Three-column layout showing sector, currency, and brokerage account breakdowns with weight bars. All three views include option contract values (opt price × shares) alongside stock holdings — not the inflated notional value. Sector/industry data fetched from yfinance. Sector table shows both CAD and USD columns. |
 
 ### JSON Output
 
@@ -519,9 +523,10 @@ Fundamentals (sector, industry, beta, type) are fetched live from yfinance for a
 
 ### Interactive Features
 
-- **Language Toggle**: Click the "中" button in the top navigation bar to switch the entire UI to Hong Kong Traditional Chinese (繁體中文). All page titles, section headers, KPI labels, table column headers, metric names, tooltips, stress scenario names, dashboard card titles/descriptions, and navigation links are translated. Click "En" to switch back to English. Language preference persists across pages via localStorage.
+- **Tab Navigation**: All analytics sections are displayed as tabs within a single `index.html` page. Click navigation links to switch between Dashboard, Positions, Options, Correlation, Risk Metrics, Stress Testing, and Exposure tabs. URL hash updates automatically (e.g., `#positions`) for direct linking and browser back/forward support.
+- **Language Toggle**: Click the "中" button in the top navigation bar to switch the entire UI to Hong Kong Traditional Chinese (繁體中文). All page titles, section headers, KPI labels, table column headers, metric names, tooltips, stress scenario names, dashboard card titles/descriptions, and navigation links are translated. Click "En" to switch back to English. Language preference persists via localStorage.
 - **Investment Disclaimer**: Dashboard page includes a footer disclaimer clarifying the report is for informational and educational purposes only and is not investment advice (language-aware).
-- **Privacy Toggle**: Click the "$ Hide" button in the top navigation bar to hide all dollar amounts and share counts across every page (only percentages and ratios remain visible). State persists across pages via localStorage. Click "$ Show" to reveal amounts again. Button text follows the current language.
+- **Privacy Toggle**: Click the "$ Hide" button in the top navigation bar to hide all dollar amounts and share counts across every tab (only percentages and ratios remain visible). State persists via localStorage. Click "$ Show" to reveal amounts again. Button text follows the current language.
 - **Sortable Tables**: All position/risk/option tables support click-to-sort on column headers with ascending/descending toggle and sort arrow indicators.
 - **Correlation Sort**: Click a ticker in the correlation matrix to sort all rows (or columns) by that ticker's correlation values.
 - **Cell Tooltips**: Hover any correlation cell to see "Ticker A vs Ticker B: 0.XX" in a floating tooltip (language-aware).
@@ -533,9 +538,11 @@ Fundamentals (sector, industry, beta, type) are fetched live from yfinance for a
 
 ### Running the Report
 
+This project uses **uv** as its Python package manager. Dependencies are declared in `pyproject.toml` and managed automatically.
+
 ```bash
 uv run python build_portfolio_report.py
 ```
 
-Open `index.html` in a browser to view the dashboard.
+Open `index.html` in a browser to view the dashboard. All tabs are contained in a single file — no other HTML files are generated.
 

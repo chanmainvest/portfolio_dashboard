@@ -498,16 +498,26 @@ def compute_individual_risk(returns, fund_df, spy_returns=None):
     return pd.DataFrame(results)
 
 
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# HTML GENERATORS
+# HTML GENERATION — Single-Page Architecture with Tab Navigation
 # ═══════════════════════════════════════════════════════════════════════════════
 
-COMMON_CSS = """
+COMBINED_CSS = """
+    * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0B1220; color: #E0E0E0; margin: 20px; }
     h1, h2 { color: #E0E0E0; border-bottom: 2px solid #2A3F5F; padding-bottom: 10px; }
     .info { color: #8899AA; margin-bottom: 20px; font-size: 14px; }
-    .nav { background: #1C2541; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-    .nav a { color: #7AAFFF; text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 4px; }
+    .positive { color: #007A33; }
+    .negative { color: #B81D13; }
+    .timestamp { color: #8899AA; font-size: 11px; white-space: nowrap; margin: 0; }
+    /* Tab system */
+    .page { display: none; }
+    .page.active { display: block; }
+    /* Navigation */
+    .nav { background: #1C2541; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; position: sticky; top: 0; z-index: 50; }
+    .nav a { color: #7AAFFF; text-decoration: none; font-size: 13px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
     .nav a:hover { background: #2A3F5F; }
     .nav a.active { background: #3A7BD5; color: white; }
     .nav .spacer { flex: 1; }
@@ -515,49 +525,108 @@ COMMON_CSS = """
     .nav .privacy-toggle:hover { background: #3A7BD5; color: white; }
     .nav .lang-toggle { background: #2A3F5F; color: #7AAFFF; border: 1px solid #3A7BD5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 8px; }
     .nav .lang-toggle:hover { background: #3A7BD5; color: white; }
+    /* Privacy */
     body.privacy-mode .dollar-amount { visibility: hidden; }
     body.privacy-mode .dollar-amount::after { content: '***'; visibility: visible; }
-    .positive { color: #007A33; }
-    .negative { color: #B81D13; }
-    .timestamp { color: #556677; font-size: 12px; margin-top: 20px; }
+    /* Tables */
+    table { border-collapse: collapse; width: 100%; }
+    th { background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; }
+    th:hover { background: #2A3F5F; }
+    td { padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }
+    tr:nth-child(even) { background: #111B2E; }
+    tr:nth-child(odd) { background: #0D1526; }
+    tr:hover { background: #1A2744; }
+    /* Dashboard */
+    #page-dashboard .header { background: linear-gradient(135deg, #1C2541 0%, #2A3F5F 100%); padding: 30px; border-radius: 12px; margin-bottom: 24px; }
+    #page-dashboard .header h1 { margin: 0 0 8px 0; font-size: 28px; border: none; padding: 0; }
+    #page-dashboard .header p { margin: 0; color: #8899AA; font-size: 14px; }
+    #page-dashboard .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media (max-width: 1100px) { #page-dashboard .kpi-strip { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 700px) { #page-dashboard .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+    #page-dashboard .kpi-mini { background: #1C2541; border-radius: 8px; padding: 16px 20px; }
+    #page-dashboard .kpi-mini .label { color: #8899AA; font-size: 11px; text-transform: uppercase; }
+    #page-dashboard .kpi-mini .value { font-size: 22px; font-weight: bold; color: #D4A843; margin-top: 4px; }
+    #page-dashboard .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    #page-dashboard .card { background: #1C2541; border-radius: 10px; padding: 24px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; border: 1px solid #2A3F5F; }
+    #page-dashboard .card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); border-color: #3A7BD5; }
+    #page-dashboard .card h2 { margin: 0 0 10px 0; font-size: 18px; color: #E0E0E0; border: none; padding: 0; }
+    #page-dashboard .card p { margin: 0; color: #8899AA; font-size: 13px; line-height: 1.5; }
+    #page-dashboard .card .icon { font-size: 36px; margin-bottom: 12px; }
+    .disclaimer { margin-top: 18px; color: #8899AA; font-size: 12px; }
+    /* Positions */
+    #page-positions .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    #page-positions .kpi-card { background: #1C2541; border-radius: 8px; padding: 14px; border-left: 4px solid #3A7BD5; }
+    #page-positions .kpi-label { color: #8899AA; font-size: 11px; text-transform: uppercase; }
+    #page-positions .kpi-value { font-size: 20px; font-weight: bold; color: #D4A843; }
+    .weight-bar { height: 8px; background: #3A7BD5; border-radius: 4px; min-width: 2px; }
+    .opt-badge { background: #D4A843; color: #0B1220; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; font-weight: bold; }
+    .opt-only-badge { background: #7A5BD5; color: white; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; font-weight: bold; }
+    /* Options */
+    #page-options .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    #page-options .kpi-card { background: #1C2541; border-radius: 8px; padding: 14px; border-left: 4px solid #D4A843; }
+    #page-options .kpi-label { color: #8899AA; font-size: 11px; text-transform: uppercase; }
+    #page-options .kpi-value { font-size: 20px; font-weight: bold; color: #D4A843; }
+    .call { color: #00C49A; }
+    .put { color: #FF6B6B; }
+    /* Correlation */
+    #page-correlation .table-container { overflow-x: auto; position: relative; }
+    #page-correlation table { font-size: 11px; width: auto; }
+    #page-correlation th { padding: 6px 8px; white-space: nowrap; font-size: 11px; text-transform: none; letter-spacing: normal; }
+    #page-correlation th.row-header { position: sticky; left: 0; z-index: 3; background: #1C2541; }
+    #page-correlation td { padding: 5px 7px; text-align: center; border: 1px solid #1A2744; font-size: 11px; white-space: nowrap; }
+    #page-correlation td.row-header { position: sticky; left: 0; background: #1C2541; color: white; font-weight: bold; z-index: 1; text-align: left; cursor: pointer; }
+    #page-correlation td.row-header:hover { background: #2A3F5F; }
+    .legend { margin-top: 20px; display: flex; gap: 20px; align-items: center; font-size: 13px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-box { width: 20px; height: 20px; border-radius: 3px; }
+    #cell-tooltip { position: fixed; background: #1C2541; color: #E0E0E0; border: 1px solid #3A7BD5; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    /* Risk Metrics */
+    #page-risk .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    #page-risk .kpi-card { background: #1C2541; border-radius: 8px; padding: 18px; border-left: 4px solid #3A7BD5; position: relative; cursor: help; }
+    #page-risk .kpi-card.pos { border-left-color: #007A33; }
+    #page-risk .kpi-card.neg { border-left-color: #B81D13; }
+    #page-risk .kpi-card.neut { border-left-color: #D4A843; }
+    #page-risk .kpi-label { color: #8899AA; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    #page-risk .kpi-value { font-size: 24px; font-weight: bold; }
+    #page-risk .kpi-value.pos { color: #007A33; }
+    #page-risk .kpi-value.neg { color: #B81D13; }
+    #page-risk .kpi-value.neut { color: #D4A843; }
+    .kpi-tooltip { display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #0D1526; border: 1px solid #3A7BD5; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #CCDDEE; line-height: 1.5; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.5); pointer-events: none; }
+    #page-risk .kpi-card:hover .kpi-tooltip { display: block; }
+    .help-icon { font-size: 11px; color: #556677; margin-left: 4px; }
+    .section-label { background: #2A3F5F; color: #AAC0DD; padding: 8px 14px; border-radius: 6px; font-size: 13px; margin: 24px 0 12px 0; display: inline-block; }
+    /* Stress Testing */
+    #page-stress .summary-box { background: #1C2541; padding: 16px 24px; border-radius: 8px; margin-bottom: 24px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 14px; align-items: center; }
+    #page-stress .summary-box .label { color: #8899AA; font-size: 11px; text-transform: uppercase; }
+    #page-stress .summary-box .value { color: #D4A843; font-weight: bold; font-size: 18px; }
+    .ccy-switch-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; font-weight: bold; white-space: nowrap; }
+    .ccy-switch-wrap .ccy-label { color: #556677; transition: color .2s; }
+    .ccy-switch-wrap .ccy-label.active { color: #D4A843; }
+    .ccy-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .ccy-switch input { opacity: 0; width: 0; height: 0; }
+    .ccy-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3A7BD5; border-radius: 24px; transition: background .3s; }
+    .ccy-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: transform .3s; }
+    .ccy-switch input:checked + .ccy-slider { background: #D4A843; }
+    .ccy-switch input:checked + .ccy-slider::before { transform: translateX(20px); }
+    /* Exposure */
+    .grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; }
+    @media (max-width: 1200px) { .grid-3col { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 800px) { .grid-3col { grid-template-columns: 1fr; } }
+    #page-exposure .weight-bar { height: 10px; border-radius: 5px; min-width: 2px; }
+    .sector-colors { background: linear-gradient(90deg, #3A7BD5, #00C49A); }
+    .currency-colors { background: linear-gradient(90deg, #D4A843, #E07A3A); }
+    .account-colors { background: linear-gradient(90deg, #7A5BD5, #BD5BA8); }
 """
 
-NAV_LINKS = [
-    ("index.html", "Dashboard", "nav_dashboard"),
-    ("positions.html", "Positions", "nav_positions"),
-    ("options.html", "Options", "nav_options"),
-    ("correlation_matrix.html", "Correlation", "nav_correlation"),
-    ("risk_metrics.html", "Risk Metrics", "nav_risk_metrics"),
-    ("stress_testing.html", "Stress Testing", "nav_stress_testing"),
-    ("sector_exposure.html", "Exposure", "nav_exposure"),
+TAB_PAGES = [
+    ("dashboard", "Dashboard", "nav_dashboard"),
+    ("positions", "Positions", "nav_positions"),
+    ("options", "Options", "nav_options"),
+    ("correlation", "Correlation", "nav_correlation"),
+    ("risk", "Risk Metrics", "nav_risk_metrics"),
+    ("stress", "Stress Testing", "nav_stress_testing"),
+    ("exposure", "Exposure", "nav_exposure"),
 ]
-
-
-PRIVACY_JS = """
-<script>
-(function() {
-    var key = 'portfolio_privacy_mode';
-    if (localStorage.getItem(key) === 'true') {
-        document.body.classList.add('privacy-mode');
-    }
-    window.togglePrivacy = function() {
-        document.body.classList.toggle('privacy-mode');
-        localStorage.setItem(key, document.body.classList.contains('privacy-mode'));
-        var btn = document.getElementById('privacy-btn');
-        if (btn) {
-            btn.setAttribute('data-i18n', document.body.classList.contains('privacy-mode') ? 'privacy_show' : 'privacy_hide');
-            if (window.applyLanguage) applyLanguage();
-        }
-    };
-    document.addEventListener('DOMContentLoaded', function() {
-        var btn = document.getElementById('privacy-btn');
-        if (btn && document.body.classList.contains('privacy-mode')) {
-            btn.setAttribute('data-i18n', 'privacy_show');
-        }
-    });
-})();
-</script>
-"""
 
 TRANSLATIONS = {
     "nav_dashboard": {"en": "Dashboard", "zh": "儀表板"},
@@ -625,6 +694,9 @@ TRANSLATIONS = {
     "opt_puts": {"en": "Puts", "zh": "認沽"},
     "opt_delta_usd": {"en": "Net Delta (USD)", "zh": "淨Delta (美元)"},
     "opt_delta_cad": {"en": "Net Delta (CAD)", "zh": "淨Delta (加元)"},
+    "opt_value_cad": {"en": "Options Value (CAD)", "zh": "期權市值 (加元)"},
+    "th_opt_price": {"en": "Opt Price", "zh": "期權價格"},
+    "th_contract_value": {"en": "Contract Value", "zh": "合約價值"},
     "h2_opt_contracts": {"en": "Option Contracts", "zh": "期權合約"},
     "h2_delta_exposure": {"en": "Delta Exposure by Position", "zh": "持倉Delta敞口"},
     "th_expiry": {"en": "Expiry", "zh": "到期日"},
@@ -652,6 +724,8 @@ TRANSLATIONS = {
     "sec_dist": {"en": "Distribution Shape", "zh": "分佈形態"},
     "sec_hedge": {"en": "Option Hedging", "zh": "期權對沖"},
     "m_total_pv": {"en": "Total Portfolio Value", "zh": "投資組合總值"},
+    "m_total_pv_cad": {"en": "Total Portfolio Value (CAD)", "zh": "投資組合總值 (加元)"},
+    "m_total_pv_usd": {"en": "Total Portfolio Value (USD)", "zh": "投資組合總值 (美元)"},
     "m_ann_ret": {"en": "Annualized Return", "zh": "年化回報"},
     "m_ann_vol": {"en": "Annualized Volatility", "zh": "年化波動率"},
     "m_sharpe": {"en": "Sharpe Ratio", "zh": "夏普比率"},
@@ -663,10 +737,16 @@ TRANSLATIONS = {
     "m_var99": {"en": "VaR 99%", "zh": "風險價值 99%"},
     "m_cvar95": {"en": "CVaR 95%", "zh": "條件風險價值 95%"},
     "m_var95d": {"en": "VaR 95% ($)", "zh": "風險價值 95% ($)"},
+    "m_var95_cad": {"en": "VaR 95% (CAD)", "zh": "風險價值 95% (加元)"},
+    "m_var95_usd": {"en": "VaR 95% (USD)", "zh": "風險價值 95% (美元)"},
     "m_var99d": {"en": "VaR 99% ($)", "zh": "風險價值 99% ($)"},
+    "m_var99_cad": {"en": "VaR 99% (CAD)", "zh": "風險價值 99% (加元)"},
+    "m_var99_usd": {"en": "VaR 99% (USD)", "zh": "風險價值 99% (美元)"},
     "m_skew": {"en": "Skewness", "zh": "偏度"},
     "m_kurt": {"en": "Kurtosis", "zh": "峰度"},
     "m_net_delta": {"en": "Net Delta (USD)", "zh": "淨Delta (美元)"},
+    "m_net_delta_usd": {"en": "Net Delta (USD)", "zh": "淨Delta (美元)"},
+    "m_net_delta_cad": {"en": "Net Delta (CAD)", "zh": "淨Delta (加元)"},
     "m_delta_exp": {"en": "Option Delta Exposure", "zh": "期權Delta敞口"},
     "m_hedge_impact": {"en": "Option Hedging Impact", "zh": "期權對沖影響"},
     "m_hvar95": {"en": "Hedged VaR 95%", "zh": "對沖後VaR 95%"},
@@ -702,7 +782,10 @@ TRANSLATIONS = {
     "info_stress": {"en": "Simulated impact of market-wide moves on portfolio value using beta, including option hedging effects.", "zh": "使用Beta模擬市場整體波動對投資組合價值的影響，包括期權對沖效果。"},
     "st_pv": {"en": "Portfolio Value", "zh": "投資組合價值"},
     "st_beta": {"en": "Portfolio Beta", "zh": "投資組合Beta"},
+    "st_pv_cad": {"en": "Portfolio Value (CAD)", "zh": "投資組合價值 (加元)"},
+    "st_pv_usd": {"en": "Portfolio Value (USD)", "zh": "投資組合價值 (美元)"},
     "st_delta_cad": {"en": "Option Delta (CAD)", "zh": "期權Delta (加元)"},
+    "st_delta_usd": {"en": "Option Delta (USD)", "zh": "期權Delta (美元)"},
     "st_1y_ret": {"en": "1Y Portfolio Return", "zh": "一年組合回報"},
     "th_scenario": {"en": "Scenario", "zh": "情景"},
     "th_mkt_move": {"en": "Market Move", "zh": "市場變動"},
@@ -725,6 +808,8 @@ TRANSLATIONS = {
     "sc_strong": {"en": "Strong Rally (+15%)", "zh": "強勁上升 (+15%)"},
     "sc_bull": {"en": "Bull Run (+20%)", "zh": "牛市行情 (+20%)"},
     "sc_surge": {"en": "Major Surge (+30%)", "zh": "大幅飆升 (+30%)"},
+    "sc_mild_pullback": {"en": "Mild Pullback (-3%)", "zh": "輕微回調 (-3%)"},
+    "sc_bubble": {"en": "Bubble (+40%)", "zh": "泡沫 (+40%)"},
     "sc_euphoric": {"en": "Euphoric Rally (+50%)", "zh": "狂熱上升 (+50%)"},
     "title_exposure": {"en": "Portfolio Exposure Analysis", "zh": "投資組合風險敞口分析"},
     "info_exposure": {"en": "Breakdown by sector (including option notional), currency, and brokerage account.", "zh": "按行業（含期權名義值）、貨幣及券商帳戶的分佈。"},
@@ -735,70 +820,19 @@ TRANSLATIONS = {
     "th_value_usd": {"en": "Value (USD)", "zh": "價值 (美元)"},
 }
 
-_LANG_JS_CODE = """
-    var langKey = 'portfolio_language';
-    function getLang() { return localStorage.getItem(langKey) || 'en'; }
-    window.applyLanguage = function() {
-        var lang = getLang();
-        document.querySelectorAll('[data-i18n]').forEach(function(el) {
-            var k = el.getAttribute('data-i18n');
-            if (T[k] && T[k][lang]) el.textContent = T[k][lang];
-        });
-        document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
-            var k = el.getAttribute('data-i18n-html');
-            if (T[k] && T[k][lang]) el.innerHTML = T[k][lang];
-        });
-        var langBtn = document.getElementById('lang-btn');
-        if (langBtn) langBtn.textContent = lang === 'en' ? '中' : 'En';
-    };
-    window.toggleLanguage = function() {
-        var lang = getLang() === 'en' ? 'zh' : 'en';
-        localStorage.setItem(langKey, lang);
-        applyLanguage();
-    };
-    document.addEventListener('DOMContentLoaded', applyLanguage);
-"""
-
-LANG_JS = (
-    "\n<script>\n(function() {\n    var T = "
-    + json.dumps(TRANSLATIONS, ensure_ascii=False)
-    + ";\n"
-    + _LANG_JS_CODE
-    + "})();\n</script>\n"
-)
-
-
-def _nav(active_page=""):
-    """Return nav HTML with active page highlighted and language toggle."""
-    links = []
-    for href, label, i18n_key in NAV_LINKS:
-        cls = ' class="active"' if href == active_page else ""
-        links.append(f'<a href="{href}"{cls} data-i18n="{i18n_key}">{label}</a>')
-    toggle_btn = '<span class="spacer"></span>'
-    toggle_btn += '<button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button>'
-    toggle_btn += '<button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button>'
-    return '<div class="nav">' + "".join(links) + toggle_btn + "</div>" + PRIVACY_JS + LANG_JS
-
-
 SORTABLE_JS = """
-<script>
 function sortTable(tableId, colIdx, isNumeric) {
     const table = document.getElementById(tableId);
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const header = table.querySelectorAll('thead th')[colIdx];
-
-    // Determine current direction
     const curDir = header.getAttribute('data-sort-dir') || 'none';
     const newDir = curDir === 'asc' ? 'desc' : 'asc';
-
-    // Clear all headers
     table.querySelectorAll('thead th').forEach(th => {
         th.setAttribute('data-sort-dir', 'none');
         const arrow = th.querySelector('.sort-arrow');
         if (arrow) arrow.remove();
     });
-
     header.setAttribute('data-sort-dir', newDir);
     const arrow = document.createElement('span');
     arrow.className = 'sort-arrow';
@@ -806,7 +840,6 @@ function sortTable(tableId, colIdx, isNumeric) {
     arrow.style.fontSize = '10px';
     arrow.textContent = newDir === 'asc' ? '\\u25B2' : '\\u25BC';
     header.appendChild(arrow);
-
     rows.sort((a, b) => {
         let aVal = a.cells[colIdx].getAttribute('data-val') || a.cells[colIdx].textContent.trim();
         let bVal = b.cells[colIdx].getAttribute('data-val') || b.cells[colIdx].textContent.trim();
@@ -821,10 +854,8 @@ function sortTable(tableId, colIdx, isNumeric) {
         if (aVal > bVal) return newDir === 'asc' ? 1 : -1;
         return 0;
     });
-
     rows.forEach(r => tbody.appendChild(r));
 }
-</script>
 """
 
 
@@ -851,11 +882,327 @@ def _corr_color(val, is_diag):
         return f"rgb(30,{g},200)", "white"
 
 
-def generate_html_correlation(corr_matrix):
-    """Generate HTML for correlation matrix with sort-by-click and cell tooltips."""
+# ─── Section Generators ─────────────────────────────────────────────────────
+# Each returns HTML content for a <div class="page"> section.
+# Correlation and Stress also return page-specific JS code.
+
+
+def _generate_dashboard_section(portfolio_value, metrics, num_positions, num_options, usd_cad_rate=1.37):
+    """Generate dashboard tab content."""
+    sharpe = metrics.get("Sharpe Ratio", 0)
+    ann_ret = metrics.get("Annualized Return", 0)
+    max_dd = metrics.get("Maximum Drawdown", 0)
+    beta = metrics.get("Beta to SPY", "N/A")
+    beta_str = f"{beta:.2f}" if isinstance(beta, float) else str(beta)
+    delta_cad = metrics.get("Option Delta Exposure", 0)
+    delta_usd = metrics.get("Net Delta (USD)", 0)
+    portfolio_value_usd = portfolio_value / usd_cad_rate
+
+    return f"""<div id="page-dashboard" class="page active">
+<div class="header">
+    <h1 data-i18n="title_dashboard">Stock Portfolio Analytics Dashboard</h1>
+    <p data-i18n="desc_dashboard">Comprehensive portfolio analysis with risk metrics, correlations, option hedging, and stress testing</p>
+</div>
+<div class="kpi-strip">
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">${portfolio_value:,.0f}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">${portfolio_value_usd:,.0f}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_ann_ret">Annualized Return</div><div class="value positive">{ann_ret:.2%}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_sharpe">Sharpe Ratio</div><div class="value">{sharpe:.2f}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_max_dd">Max Drawdown</div><div class="value negative">{max_dd:.2%}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_beta">Beta to SPY</div><div class="value">{beta_str}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_pos_opt">Positions / Options</div><div class="value">{num_positions} / {num_options}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">${delta_cad:+,.0f}</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">${delta_usd:+,.0f}</div></div>
+    <div class="kpi-mini" style="visibility:hidden;"></div>
+</div>
+<div class="cards">
+    <a class="card" onclick="showPage('positions')">
+        <div class="icon">&#128202;</div>
+        <h2 data-i18n="card_positions">Positions</h2>
+        <p data-i18n="card_positions_desc">All portfolio positions: stocks, ETFs, mutual funds, cash. Market values, weights, beta, and industry. Sortable columns.</p>
+    </a>
+    <a class="card" onclick="showPage('options')">
+        <div class="icon">&#128203;</div>
+        <h2 data-i18n="card_options">Options</h2>
+        <p data-i18n="card_options_desc">All option contracts with delta exposure analysis. Calls, puts, spreads, and their hedging impact on the portfolio.</p>
+    </a>
+    <a class="card" onclick="showPage('correlation')">
+        <div class="icon">&#128279;</div>
+        <h2 data-i18n="card_correlation">Correlation Matrix</h2>
+        <p data-i18n="card_correlation_desc">Pairwise return correlations with heatmap. Click tickers to sort. Hover cells for ticker pair details.</p>
+    </a>
+    <a class="card" onclick="showPage('risk')">
+        <div class="icon">&#9888;</div>
+        <h2 data-i18n="card_risk">Risk Metrics</h2>
+        <p data-i18n="card_risk_desc">VaR, Sharpe, Sortino, Calmar, Maximum Drawdown, Beta, option hedging impact. Hover cards for term explanations.</p>
+    </a>
+    <a class="card" onclick="showPage('stress')">
+        <div class="icon">&#128293;</div>
+        <h2 data-i18n="card_stress">Stress Testing</h2>
+        <p data-i18n="card_stress_desc">Scenario analysis from -50% crash to +50% rally, showing both unhedged and option-hedged impacts with 1Y return context.</p>
+    </a>
+    <a class="card" onclick="showPage('exposure')">
+        <div class="icon">&#127991;</div>
+        <h2 data-i18n="card_exposure">Sector, Currency &amp; Account Exposure</h2>
+        <p data-i18n="card_exposure_desc">Portfolio breakdown by sector allocation (incl. option notional), currency denomination, and brokerage account.</p>
+    </a>
+</div>
+<p class="disclaimer" data-i18n="disclaimer">Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.</p>
+</div>"""
+
+
+def _generate_positions_section(portfolio_df, opts_df, fund_df, portfolio_value, usd_cad_rate=1.37):
+    """Generate positions tab content."""
+    fund_cols = ["Symbol", "Type", "Beta", "Industry"]
+    if "P/E" in fund_df.columns:
+        fund_cols.append("P/E")
+    available_cols = [c for c in fund_cols if c in fund_df.columns]
+    merged = portfolio_df.merge(fund_df[available_cols], on="Symbol", how="left")
+    merged.loc[merged["PositionType"] == "Cash", "Type"] = "Cash"
+    merged.loc[merged["PositionType"] == "Cash", "Beta"] = 0.0
+    merged["Weight"] = merged["Mkt Value (CAD)"] / portfolio_value if portfolio_value else 0
+
+    option_counts = opts_df.groupby("Symbol").size().to_dict()
+
+    # Option-only tickers
+    portfolio_symbols = set(merged["Symbol"].unique())
+    option_only_symbols = [s for s in opts_df["Symbol"].unique() if s not in portfolio_symbols]
+    if option_only_symbols:
+        opt_only_rows = []
+        for sym in option_only_symbols:
+            opt_rows = opts_df[opts_df["Symbol"] == sym]
+            sector = opt_rows["Sector"].iloc[0] if "Sector" in opt_rows.columns and not opt_rows["Sector"].isna().all() else "-"
+            currency = opt_rows["Currency"].iloc[0] if "Currency" in opt_rows.columns and not opt_rows["Currency"].isna().all() else "USD"
+            fund_row = fund_df[fund_df["Symbol"] == sym]
+            beta = fund_row["Beta"].values[0] if len(fund_row) > 0 and "Beta" in fund_row.columns and pd.notna(fund_row["Beta"].values[0]) else None
+            industry = fund_row["Industry"].values[0] if len(fund_row) > 0 and "Industry" in fund_row.columns and pd.notna(fund_row["Industry"].values[0]) else "-"
+            ftype = fund_row["Type"].values[0] if len(fund_row) > 0 and "Type" in fund_row.columns and pd.notna(fund_row["Type"].values[0]) else "-"
+            opt_only_rows.append({
+                "Symbol": sym, "Shares": 0, "Price": 0, "Currency": currency,
+                "Mkt Value": 0, "Mkt Value (CAD)": 0, "Sector": sector,
+                "Account": "Options Only", "PositionType": "Options Only",
+                "Type": ftype, "Beta": beta, "Industry": industry, "Weight": 0,
+            })
+        opt_only_df = pd.DataFrame(opt_only_rows)
+        merged = pd.concat([merged, opt_only_df], ignore_index=True)
+
+    num_positions = len(merged)
+    total_value = merged["Mkt Value (CAD)"].sum()
+    num_stocks = len(merged[merged.get("Type", pd.Series(dtype=str)) == "Stock"]) if "Type" in merged.columns else 0
+    num_etfs = len(merged[merged.get("Type", pd.Series(dtype=str)) == "ETF"]) if "Type" in merged.columns else 0
+    num_mfs = len(merged[merged["PositionType"] == "Mutual Fund"])
+    num_options = len(opts_df)
+    cash_total = merged[merged["PositionType"] == "Cash"]["Mkt Value (CAD)"].sum()
+
+    html = '<div id="page-positions" class="page">\n'
+    html += '<h1 data-i18n="title_positions">Portfolio Positions</h1>\n'
+    html += '<p class="info" data-i18n="info_positions">All positions including stocks, ETFs, mutual funds, and cash. Click column headers to sort.</p>\n'
+    html += '<div class="kpi-grid">\n'
+
+    _pos_i18n = {"Total Positions": "pos_total", "Portfolio Value (CAD)": "pos_pv_cad",
+                  "Stocks": "pos_stocks", "ETFs": "pos_etfs", "Mutual Funds": "pos_mf",
+                  "Option Contracts": "pos_opt_contracts", "Cash": "pos_cash"}
+    for label, value in [
+        ("Total Positions", str(num_positions)),
+        ("Portfolio Value (CAD)", f"${total_value:,.0f}"),
+        ("Stocks", str(num_stocks)),
+        ("ETFs", str(num_etfs)),
+        ("Mutual Funds", str(num_mfs)),
+        ("Option Contracts", str(num_options)),
+        ("Cash", f"${cash_total:,.0f}"),
+    ]:
+        dollar_cls = " dollar-amount" if value.startswith("$") else ""
+        i18n_key = _pos_i18n.get(label, "")
+        html += f'<div class="kpi-card"><div class="kpi-label" data-i18n="{i18n_key}">{label}</div><div class="kpi-value{dollar_cls}">{value}</div></div>\n'
+    html += '</div>\n'
+
+    merged["Mkt Value (USD)"] = merged.apply(
+        lambda r: r["Mkt Value"] if r.get("Currency") == "USD"
+        else r["Mkt Value (CAD)"] / usd_cad_rate, axis=1
+    )
+    merged["Mkt Value (USD)"] = merged["Mkt Value (USD)"].fillna(0)
+
+    columns = [
+        ("#", True, "th_hash"), ("Symbol", False, "th_symbol"), ("Account", False, "th_account"),
+        ("Sector", False, "th_sector"), ("Type", False, "th_type"),
+        ("Shares", True, "th_shares"), ("Price", True, "th_price"), ("Currency", False, "th_currency"),
+        ("Mkt Value (CAD)", True, "th_mkt_cad"), ("Mkt Value (USD)", True, "th_mkt_usd"),
+        ("Weight", True, "th_weight"), ("Weight Bar", False, "th_weight_bar"),
+        ("Beta", True, "th_beta"), ("Industry", False, "th_industry"), ("Options", True, "th_options"),
+    ]
+
+    html += '<table id="positions-table"><thead><tr>'
+    for idx, (col_name, is_num, i18n_key) in enumerate(columns):
+        if col_name == "Weight Bar":
+            html += f'<th data-i18n="{i18n_key}">{col_name}</th>'
+        else:
+            html += f'<th onclick="sortTable(\'positions-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{col_name}</th>'
+    html += '</tr></thead><tbody>\n'
+
+    merged_sorted = merged.sort_values("Mkt Value (CAD)", ascending=False)
+    max_weight = merged_sorted["Weight"].max() if not merged_sorted.empty else 1
+
+    for idx, (_, row) in enumerate(merged_sorted.iterrows(), 1):
+        weight_pct = row["Weight"] * 100
+        bar_width = (row["Weight"] / max_weight * 100) if max_weight > 0 else 0
+        beta_val = f'{row["Beta"]:.2f}' if "Beta" in row and pd.notna(row.get("Beta")) else "-"
+        industry = row.get("Industry", "-")
+        if pd.isna(industry) or str(industry) == "#VALUE!":
+            industry = "-"
+        type_val = row.get("Type", "-")
+        if pd.isna(type_val):
+            type_val = "-"
+        sym = row["Symbol"]
+        opt_count = option_counts.get(sym, 0)
+        opt_badge = f'<span class="opt-badge">{opt_count} opts</span>' if opt_count > 0 else ""
+        is_opt_only = row.get("PositionType") == "Options Only"
+        if is_opt_only:
+            opt_badge = f'<span class="opt-only-badge">opts only</span>{opt_badge}'
+        account = row.get("Account", "-")
+        if pd.isna(account):
+            account = "-"
+        mkt_usd = row.get("Mkt Value (USD)", 0)
+        if pd.isna(mkt_usd):
+            mkt_usd = 0
+
+        html += f"""<tr>
+    <td data-val="{idx}">{idx}</td>
+    <td><strong>{sym}</strong>{opt_badge}</td>
+    <td>{account}</td>
+    <td>{row.get('Sector', '-')}</td>
+    <td>{type_val}</td>
+    <td data-val="{row['Shares']}" class="dollar-amount">{row['Shares']:,.0f}</td>
+    <td data-val="{row['Price']}">{row['Price']:,.2f}</td>
+    <td>{row['Currency']}</td>
+    <td data-val="{row['Mkt Value (CAD)']}" class="dollar-amount">${row['Mkt Value (CAD)']:,.0f}</td>
+    <td data-val="{mkt_usd}" class="dollar-amount">${mkt_usd:,.0f}</td>
+    <td data-val="{weight_pct:.4f}">{weight_pct:.2f}%</td>
+    <td><div class="weight-bar" style="width:{bar_width:.0f}%"></div></td>
+    <td data-val="{row.get('Beta', 0) if pd.notna(row.get('Beta')) else 0}">{beta_val}</td>
+    <td>{industry}</td>
+    <td data-val="{opt_count}">{opt_count if opt_count > 0 else '-'}</td>
+</tr>\n"""
+
+    html += '</tbody></table>\n</div>'
+    return html
+
+
+def _generate_options_section(opts_df, option_delta_df, total_delta_usd, usd_cad_rate=1.37):
+    """Generate options tab content."""
+    total_delta_cad = total_delta_usd * usd_cad_rate
+    total_contracts = len(opts_df)
+    calls = len(opts_df[opts_df["Type"] == "CALL"]) if "Type" in opts_df.columns else 0
+    puts = len(opts_df[opts_df["Type"] == "PUT"]) if "Type" in opts_df.columns else 0
+
+    total_opt_value_cad = 0.0
+    if "Opt Price" in opts_df.columns:
+        for _, row in opts_df.iterrows():
+            opt_price = row.get("Opt Price", 0) or 0
+            shares = row.get("Shares", 0) or 0
+            currency = row.get("Currency", "USD")
+            fx = usd_cad_rate if currency == "USD" else 1.0
+            total_opt_value_cad += opt_price * shares * fx
+
+    html = '<div id="page-options" class="page">\n'
+    html += '<h1 data-i18n="title_options">Options Positions &amp; Delta Exposure</h1>\n'
+    html += '<p class="info" data-i18n="info_options">All option contracts with live prices and estimated delta exposure. Negative shares = short position. Click headers to sort.</p>\n'
+    html += '<div class="kpi-grid">\n'
+
+    _opt_i18n = {
+        "Total Contracts": "opt_total", "Calls": "opt_calls", "Puts": "opt_puts",
+        "Options Value (CAD)": "opt_value_cad",
+        "Net Delta (USD)": "opt_delta_usd", "Net Delta (CAD)": "opt_delta_cad",
+    }
+    for label, value in [
+        ("Total Contracts", str(total_contracts)),
+        ("Calls", str(calls)),
+        ("Puts", str(puts)),
+        ("Options Value (CAD)", f"${total_opt_value_cad:,.0f}"),
+        ("Net Delta (USD)", f"${total_delta_usd:+,.0f}"),
+        ("Net Delta (CAD)", f"${total_delta_cad:+,.0f}"),
+    ]:
+        dollar_cls = " dollar-amount" if "$" in value else ""
+        i18n_key = _opt_i18n.get(label, "")
+        html += f'<div class="kpi-card"><div class="kpi-label" data-i18n="{i18n_key}">{label}</div><div class="kpi-value{dollar_cls}">{value}</div></div>\n'
+    html += '</div>\n'
+
+    # Options contracts table
+    html += '<h2 data-i18n="h2_opt_contracts">Option Contracts</h2>\n'
+    cols = [("#", False, "th_hash"), ("Symbol", False, "th_symbol"), ("Type", False, "th_type"),
+            ("Expiry", False, "th_expiry"), ("Strike", True, "th_strike"),
+            ("Shares", True, "th_shares"), ("UL Price", True, "th_ul_price"),
+            ("Opt Price", True, "th_opt_price"), ("Currency", False, "th_currency"),
+            ("Contract Value", True, "th_contract_value")]
+    html += '<table id="options-table"><thead><tr>'
+    for idx, (c, is_num, i18n_key) in enumerate(cols):
+        html += f'<th onclick="sortTable(\'options-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{c}</th>'
+    html += '</tr></thead><tbody>\n'
+
+    for idx, (_, row) in enumerate(opts_df.iterrows(), 1):
+        type_cls = "call" if row.get("Type") == "CALL" else "put"
+        expiry = row.get("Expiry", "")
+        if isinstance(expiry, (datetime, pd.Timestamp)):
+            expiry = expiry.strftime("%Y-%m-%d")
+        shares = row.get("Shares", 0) or 0
+        opt_price = row.get("Opt Price", 0) or 0
+        ul_price = row.get("Price", 0) or 0
+        currency = row.get("Currency", "USD")
+        fx = usd_cad_rate if currency == "USD" else 1.0
+        contract_value_cad = opt_price * shares * fx
+        val_cls = "positive" if contract_value_cad > 0 else "negative" if contract_value_cad < 0 else ""
+
+        html += f"""<tr>
+    <td>{idx}</td>
+    <td><strong>{row['Symbol']}</strong></td>
+    <td class="{type_cls}">{row.get('Type', '')}</td>
+    <td>{expiry}</td>
+    <td data-val="{row.get('Strike', 0)}" class="dollar-amount">{row.get('Strike', 0):,.1f}</td>
+    <td data-val="{shares}">{shares:,.0f}</td>
+    <td data-val="{ul_price}" class="dollar-amount">{ul_price:,.2f}</td>
+    <td data-val="{opt_price}" class="dollar-amount">{opt_price:,.2f}</td>
+    <td>{currency}</td>
+    <td data-val="{contract_value_cad}" class="{val_cls} dollar-amount">${contract_value_cad:+,.0f}</td>
+</tr>\n"""
+    html += '</tbody></table>\n'
+
+    # Delta exposure table
+    if not option_delta_df.empty:
+        html += '<h2 data-i18n="h2_delta_exposure">Delta Exposure by Position</h2>\n'
+        html += '<table id="delta-table"><thead><tr>'
+        delta_cols = [("#", False, "th_hash"), ("Symbol", False, "th_symbol"), ("Type", False, "th_type"),
+                      ("Strike", True, "th_strike"), ("Shares", True, "th_shares"),
+                      ("UL Price", True, "th_ul_price"), ("Moneyness", True, "th_moneyness"),
+                      ("Delta", True, "th_delta"), ("Net Delta", True, "th_net_delta"),
+                      ("Notional Delta (CAD)", True, "th_not_delta_cad")]
+        for idx, (c, is_num, i18n_key) in enumerate(delta_cols):
+            html += f'<th onclick="sortTable(\'delta-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{c}</th>'
+        html += '</tr></thead><tbody>\n'
+
+        for idx, (_, row) in enumerate(option_delta_df.iterrows(), 1):
+            type_cls = "call" if row["Type"] == "CALL" else "put"
+            delta_cls = "positive" if row["Notional Delta (CAD)"] > 0 else "negative"
+            html += f"""<tr>
+    <td>{idx}</td>
+    <td><strong>{row['Symbol']}</strong></td>
+    <td class="{type_cls}">{row['Type']}</td>
+    <td data-val="{row['Strike']}" class="dollar-amount">{row['Strike']:,.1f}</td>
+    <td data-val="{row['Shares']}">{row['Shares']:,.0f}</td>
+    <td data-val="{row['Underlying Price']}" class="dollar-amount">{row['Underlying Price']:,.2f}</td>
+    <td data-val="{row['Moneyness']}">{row['Moneyness']:.2f}</td>
+    <td data-val="{row['Delta']}">{row['Delta']:.3f}</td>
+    <td data-val="{row['Net Delta']}" class="dollar-amount">{row['Net Delta']:,.0f}</td>
+    <td data-val="{row['Notional Delta (CAD)']}" class="{delta_cls} dollar-amount">${row['Notional Delta (CAD)']:+,.0f}</td>
+</tr>\n"""
+        html += '</tbody></table>\n'
+
+    html += '</div>'
+    return html
+
+
+def _generate_correlation_section(corr_matrix):
+    """Generate correlation matrix tab content and its JS code."""
     tickers = list(corr_matrix.columns)
 
-    # Serialize correlation data as JSON for JS sort
     corr_json = {}
     for t1 in tickers:
         corr_json[t1] = {}
@@ -863,15 +1210,13 @@ def generate_html_correlation(corr_matrix):
             v = corr_matrix.loc[t1, t2]
             corr_json[t1][t2] = round(float(v), 4) if not np.isnan(v) else None
 
-    # Build header row
     header_cells = ""
     for t in tickers:
-        header_cells += f'<th onclick="sortByCol(\'{t}\')">{t}</th>'
+        header_cells += f'<th onclick="corrSortByCol(\'{t}\')">{t}</th>'
 
-    # Build body rows
     body_rows = ""
     for t1 in tickers:
-        cells = f'<td class="row-header" onclick="sortByRow(\'{t1}\')">{t1}</td>'
+        cells = f'<td class="row-header" onclick="corrSortByRow(\'{t1}\')">{t1}</td>'
         for t2 in tickers:
             val = corr_matrix.loc[t1, t2]
             if np.isnan(val):
@@ -881,36 +1226,12 @@ def generate_html_correlation(corr_matrix):
                 cells += f'<td data-r="{t1}" data-c="{t2}" style="background:{bg};color:{fg};">{val:.2f}</td>'
         body_rows += f"<tr>{cells}</tr>\n"
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Correlation Matrix</title>
-<style>
-    {COMMON_CSS}
-    .table-container {{ overflow-x: auto; position: relative; }}
-    table {{ border-collapse: collapse; font-size: 11px; }}
-    th {{ background: #1C2541; color: white; padding: 6px 8px; position: sticky; top: 0; z-index: 2; white-space: nowrap; cursor: pointer; user-select: none; }}
-    th:hover {{ background: #2A3F5F; }}
-    th.row-header {{ position: sticky; left: 0; z-index: 3; background: #1C2541; cursor: pointer; }}
-    td {{ padding: 5px 7px; text-align: center; border: 1px solid #1A2744; font-size: 11px; white-space: nowrap; }}
-    td.row-header {{ position: sticky; left: 0; background: #1C2541; color: white; font-weight: bold; z-index: 1; text-align: left; cursor: pointer; }}
-    td.row-header:hover {{ background: #2A3F5F; }}
-    .legend {{ margin-top: 20px; display: flex; gap: 20px; align-items: center; font-size: 13px; flex-wrap: wrap; }}
-    .legend-item {{ display: flex; align-items: center; gap: 6px; }}
-    .legend-box {{ width: 20px; height: 20px; border-radius: 3px; }}
-    #cell-tooltip {{ position: fixed; background: #1C2541; color: #E0E0E0; border: 1px solid #3A7BD5; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }}
-</style>
-</head>
-<body>
-{_nav("correlation_matrix.html")}
+    html = f"""<div id="page-correlation" class="page">
 <h1 data-i18n="title_correlation">Portfolio Correlation Matrix</h1>
 <p class="info" data-i18n="info_correlation">Correlation of daily log returns over the past 12 months. Click any ticker header or row label to sort. Hover cells to see ticker pair.</p>
-<div id="cell-tooltip"></div>
 <div class="table-container">
 <table id="corr-table">
-<thead><tr><th class="row-header" onclick="resetSort()" data-i18n="th_ticker">Ticker</th>
+<thead><tr><th class="row-header" onclick="corrResetSort()" data-i18n="th_ticker">Ticker</th>
 {header_cells}
 </tr></thead>
 <tbody>
@@ -924,34 +1245,34 @@ def generate_html_correlation(corr_matrix):
     <div class="legend-item"><div class="legend-box" style="background:rgb(200,180,50);"></div> <span data-i18n="legend_moderate">~0.4-0.7 (Moderate)</span></div>
     <div class="legend-item"><div class="legend-box" style="background:rgb(200,50,50);"></div> <span data-i18n="legend_strong_pos">&ge; 0.7 (Strong pos.)</span></div>
 </div>
-<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+</div>"""
 
-<script>
+    js = f"""
 const CORR = {json.dumps(corr_json)};
 const TICKERS = {json.dumps(tickers)};
-let currentSort = null;
-let sortAsc = true;
+let corrCurrentSort = null;
+let corrSortAsc = true;
 
-// Tooltip
-const tooltip = document.getElementById('cell-tooltip');
-function attachTooltips() {{
-    document.querySelectorAll('#corr-table td[data-r]').forEach(td => {{
+function corrAttachTooltips() {{
+    document.querySelectorAll('#corr-table td[data-r]').forEach(function(td) {{
         td.addEventListener('mouseenter', function(e) {{
-            const r = this.getAttribute('data-r');
-            const c = this.getAttribute('data-c');
-            const v = this.textContent;
-            const isZh = (localStorage.getItem('portfolio_language') || 'en') === 'zh';
+            var r = this.getAttribute('data-r');
+            var c = this.getAttribute('data-c');
+            var v = this.textContent;
+            var isZh = (localStorage.getItem('portfolio_language') || 'en') === 'zh';
+            var tooltip = document.getElementById('cell-tooltip');
             tooltip.innerHTML = '<strong>' + r + '</strong> ' + (isZh ? '對' : 'vs') + ' <strong>' + c + '</strong><br>' + (isZh ? '相關性: ' : 'Correlation: ') + v;
             tooltip.style.display = 'block';
         }});
         td.addEventListener('mousemove', function(e) {{
+            var tooltip = document.getElementById('cell-tooltip');
             tooltip.style.left = (e.clientX + 14) + 'px';
             tooltip.style.top = (e.clientY + 14) + 'px';
         }});
-        td.addEventListener('mouseleave', function() {{ tooltip.style.display = 'none'; }});
+        td.addEventListener('mouseleave', function() {{ document.getElementById('cell-tooltip').style.display = 'none'; }});
     }});
 }}
-attachTooltips();
+document.addEventListener('DOMContentLoaded', corrAttachTooltips);
 
 function getCorrColor(val, isDiag) {{
     if (isDiag) return ['#2A3F5F', '#AABBCC'];
@@ -975,7 +1296,7 @@ function getCorrColor(val, isDiag) {{
     return ['rgb(30,' + g + ',200)', 'white'];
 }}
 
-function rebuildRow(row, sorted) {{
+function corrRebuildRow(row, sorted) {{
     var rowTicker = row.querySelector('td.row-header').textContent;
     while (row.children.length > 1) row.removeChild(row.lastChild);
     sorted.forEach(function(colTicker) {{
@@ -996,8 +1317,8 @@ function rebuildRow(row, sorted) {{
     }});
 }}
 
-function sortByCol(ticker) {{
-    if (currentSort === 'col_' + ticker) {{ sortAsc = !sortAsc; }} else {{ currentSort = 'col_' + ticker; sortAsc = false; }}
+function corrSortByCol(ticker) {{
+    if (corrCurrentSort === 'col_' + ticker) {{ corrSortAsc = !corrSortAsc; }} else {{ corrCurrentSort = 'col_' + ticker; corrSortAsc = false; }}
     var tbody = document.querySelector('#corr-table tbody');
     var rows = Array.from(tbody.querySelectorAll('tr'));
     rows.sort(function(a, b) {{
@@ -1005,86 +1326,60 @@ function sortByCol(ticker) {{
         var bLabel = b.querySelector('td.row-header').textContent;
         var aVal = CORR[aLabel] && CORR[aLabel][ticker] != null ? CORR[aLabel][ticker] : -999;
         var bVal = CORR[bLabel] && CORR[bLabel][ticker] != null ? CORR[bLabel][ticker] : -999;
-        return sortAsc ? aVal - bVal : bVal - aVal;
+        return corrSortAsc ? aVal - bVal : bVal - aVal;
     }});
     rows.forEach(function(r) {{ tbody.appendChild(r); }});
-    attachTooltips();
+    corrAttachTooltips();
 }}
 
-function sortByRow(ticker) {{
-    // Sort columns by correlation to this ticker
-    if (currentSort === 'row_' + ticker) {{ sortAsc = !sortAsc; }} else {{ currentSort = 'row_' + ticker; sortAsc = false; }}
+function corrSortByRow(ticker) {{
+    if (corrCurrentSort === 'row_' + ticker) {{ corrSortAsc = !corrSortAsc; }} else {{ corrCurrentSort = 'row_' + ticker; corrSortAsc = false; }}
     var sorted = TICKERS.slice().sort(function(a, b) {{
         var aVal = CORR[ticker] && CORR[ticker][a] != null ? CORR[ticker][a] : -999;
         var bVal = CORR[ticker] && CORR[ticker][b] != null ? CORR[ticker][b] : -999;
-        return sortAsc ? aVal - bVal : bVal - aVal;
+        return corrSortAsc ? aVal - bVal : bVal - aVal;
     }});
-    // Rebuild header
     var thead = document.querySelector('#corr-table thead tr');
     while (thead.children.length > 1) thead.removeChild(thead.lastChild);
     sorted.forEach(function(t) {{
         var th = document.createElement('th');
         th.textContent = t;
-        th.onclick = function() {{ sortByCol(t); }};
+        th.onclick = function() {{ corrSortByCol(t); }};
         thead.appendChild(th);
     }});
-    // Rebuild each row
     var rows = document.querySelectorAll('#corr-table tbody tr');
-    rows.forEach(function(row) {{ rebuildRow(row, sorted); }});
-    attachTooltips();
+    rows.forEach(function(row) {{ corrRebuildRow(row, sorted); }});
+    corrAttachTooltips();
 }}
 
-function resetSort() {{
-    location.reload();
+function corrResetSort() {{
+    showPage('correlation');
 }}
-</script>
-</body></html>"""
-    return html
-
-
-def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd_cad_rate=1.37):
-    """Generate HTML for risk metrics with term description tooltips."""
-    portfolio_value_usd = portfolio_value / usd_cad_rate
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Risk Metrics</title>
-<style>
-    {COMMON_CSS}
-    .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 30px; }}
-    .kpi-card {{ background: #1C2541; border-radius: 8px; padding: 18px; border-left: 4px solid #3A7BD5; position: relative; cursor: help; }}
-    .kpi-card.pos {{ border-left-color: #007A33; }}
-    .kpi-card.neg {{ border-left-color: #B81D13; }}
-    .kpi-card.neut {{ border-left-color: #D4A843; }}
-    .kpi-label {{ color: #8899AA; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }}
-    .kpi-value {{ font-size: 24px; font-weight: bold; }}
-    .kpi-value.pos {{ color: #007A33; }}
-    .kpi-value.neg {{ color: #B81D13; }}
-    .kpi-value.neut {{ color: #D4A843; }}
-    .kpi-tooltip {{ display: none; position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: #0D1526; border: 1px solid #3A7BD5; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #CCDDEE; line-height: 1.5; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.5); pointer-events: none; }}
-    .kpi-card:hover .kpi-tooltip {{ display: block; }}
-    .help-icon {{ font-size: 11px; color: #556677; margin-left: 4px; }}
-    table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
-    th {{ background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; }}
-    th:hover {{ background: #2A3F5F; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }}
-    tr:nth-child(even) {{ background: #111B2E; }}
-    tr:nth-child(odd) {{ background: #0D1526; }}
-    tr:hover {{ background: #1A2744; }}
-    h2 {{ margin-top: 30px; }}
-    .section-label {{ background: #2A3F5F; color: #AAC0DD; padding: 8px 14px; border-radius: 6px; font-size: 13px; margin: 24px 0 12px 0; display: inline-block; }}
-</style>
-</head>
-<body>
-{_nav("risk_metrics.html")}
-<h1 data-i18n="title_risk">Portfolio Risk Metrics</h1>
-<p class="info" data-i18n="info_risk">Risk analytics based on 1-year daily return history. Risk-free rate: {RISK_FREE_RATE:.1%}. Hover KPI cards for explanations.</p>
 """
+    return html, js
+
+
+def _generate_risk_section(metrics, individual_risk_df, portfolio_value, usd_cad_rate=1.37):
+    """Generate risk metrics tab content."""
+    portfolio_value_usd = portfolio_value / usd_cad_rate
+
+    # Set derived metrics
+    metrics["Total Portfolio Value (CAD)"] = portfolio_value
+    metrics["Total Portfolio Value (USD)"] = portfolio_value_usd
+    metrics["VaR 95% (CAD)"] = abs(metrics.get("VaR 95%", 0)) * portfolio_value
+    metrics["VaR 95% (USD)"] = abs(metrics.get("VaR 95%", 0)) * portfolio_value_usd
+    metrics["VaR 99% (CAD)"] = abs(metrics.get("VaR 99%", 0)) * portfolio_value
+    metrics["VaR 99% (USD)"] = abs(metrics.get("VaR 99%", 0)) * portfolio_value_usd
+    net_delta_usd = metrics.get("Net Delta (USD)", 0)
+    metrics["Net Delta (CAD)"] = net_delta_usd * usd_cad_rate if isinstance(net_delta_usd, (int, float)) else 0
+
+    dollar_keys = {
+        "Total Portfolio Value (CAD)", "Total Portfolio Value (USD)",
+        "VaR 95% (CAD)", "VaR 95% (USD)", "VaR 99% (CAD)", "VaR 99% (USD)",
+        "Net Delta (USD)", "Net Delta (CAD)",
+    }
 
     def _fmt_metric(key):
-        """Format metric value for display."""
         v = metrics.get(key, 0)
         if isinstance(v, str):
             return v
@@ -1099,7 +1394,6 @@ def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd
         return str(v)
 
     def _kpi_cls(key):
-        """Determine KPI card styling class."""
         v = metrics.get(key, 0)
         if isinstance(v, str):
             return "neut"
@@ -1111,7 +1405,6 @@ def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd
             return "neg"
         return "neut"
 
-    # Group KPIs
     groups = [
         ("Portfolio Overview", ["Total Portfolio Value (CAD)", "Total Portfolio Value (USD)", "Annualized Return", "Annualized Volatility"]),
         ("Risk-Adjusted Returns", ["Sharpe Ratio", "Sortino Ratio", "Calmar Ratio"]),
@@ -1121,24 +1414,6 @@ def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd
         ("Option Hedging", ["Net Delta (USD)", "Net Delta (CAD)", "Option Hedging Impact", "Hedged VaR 95%", "Hedged VaR 99%"]),
     ]
 
-    # Set derived metrics
-    metrics["Total Portfolio Value (CAD)"] = portfolio_value
-    metrics["Total Portfolio Value (USD)"] = portfolio_value_usd
-    metrics["VaR 95% (CAD)"] = abs(metrics.get("VaR 95%", 0)) * portfolio_value
-    metrics["VaR 95% (USD)"] = abs(metrics.get("VaR 95%", 0)) * portfolio_value_usd
-    metrics["VaR 99% (CAD)"] = abs(metrics.get("VaR 99%", 0)) * portfolio_value
-    metrics["VaR 99% (USD)"] = abs(metrics.get("VaR 99%", 0)) * portfolio_value_usd
-    net_delta_usd = metrics.get("Net Delta (USD)", 0)
-    metrics["Net Delta (CAD)"] = net_delta_usd * usd_cad_rate if isinstance(net_delta_usd, (int, float)) else 0
-
-    # Keys that display dollar amounts
-    dollar_keys = {
-        "Total Portfolio Value (CAD)", "Total Portfolio Value (USD)",
-        "VaR 95% (CAD)", "VaR 95% (USD)", "VaR 99% (CAD)", "VaR 99% (USD)",
-        "Net Delta (USD)", "Net Delta (CAD)",
-    }
-
-    # i18n key mappings for risk metrics
     _sec_i18n = {"Portfolio Overview": "sec_overview", "Risk-Adjusted Returns": "sec_risk_adj",
                  "Drawdown & Market Risk": "sec_drawdown", "Value at Risk": "sec_var",
                  "Distribution Shape": "sec_dist", "Option Hedging": "sec_hedge"}
@@ -1166,6 +1441,10 @@ def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd
                 "Net Delta (USD)": "tt_net_delta", "Net Delta (CAD)": "tt_net_delta",
                 "Option Hedging Impact": "tt_hedge_impact", "Hedged VaR 95%": "tt_hvar95",
                 "Hedged VaR 99%": "tt_hvar99"}
+
+    html = f'<div id="page-risk" class="page">\n'
+    html += f'<h1 data-i18n="title_risk">Portfolio Risk Metrics</h1>\n'
+    html += f'<p class="info" data-i18n="info_risk">Risk analytics based on 1-year daily return history. Risk-free rate: {RISK_FREE_RATE:.1%}. Hover KPI cards for explanations.</p>\n'
 
     for group_name, keys in groups:
         sec_key = _sec_i18n.get(group_name, "")
@@ -1209,81 +1488,55 @@ def generate_html_risk_metrics(metrics, individual_risk_df, portfolio_value, usd
     <td data-val="{row['Beta'] if isinstance(row['Beta'], (int, float)) else 0}">{beta_val}</td>
 </tr>\n"""
 
-    html += '</tbody></table>\n'
-    html += SORTABLE_JS
-    html += f'<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>'
-    html += "</body></html>"
+    html += '</tbody></table>\n</div>'
     return html
 
 
-def generate_html_stress_testing(stress_df, portfolio_value, beta, option_delta_usd=0, usd_cad_rate=1.37, ann_return=0):
-    """Generate HTML for stress testing including option hedging."""
+def _generate_stress_section(stress_df, portfolio_value, beta, option_delta_usd=0, usd_cad_rate=1.37, ann_return=0):
+    """Generate stress testing tab content and its JS code."""
     option_delta_cad = option_delta_usd * usd_cad_rate
     portfolio_value_usd = portfolio_value / usd_cad_rate
     option_delta_usd_val = option_delta_usd
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Stress Testing</title>
-<style>
-    {COMMON_CSS}
-    .summary-box {{ background: #1C2541; padding: 16px 24px; border-radius: 8px; margin-bottom: 24px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 14px; }}
-    .summary-box .item {{ }}
-    .summary-box .label {{ color: #8899AA; font-size: 11px; text-transform: uppercase; }}
-    .summary-box .value {{ color: #D4A843; font-weight: bold; font-size: 18px; }}
-    .currency-toggle {{ background: #2A3F5F; color: #7AAFFF; border: 1px solid #3A7BD5; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-bottom: 12px; }}
-    .currency-toggle:hover {{ background: #3A7BD5; color: white; }}
-    .currency-toggle.active {{ background: #3A7BD5; color: white; }}
-    table {{ border-collapse: collapse; width: 100%; max-width: 1400px; }}
-    th {{ background: #1C2541; color: white; padding: 12px 16px; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }}
-    td {{ padding: 12px 16px; border-bottom: 1px solid #1A2744; font-size: 14px; }}
-    tr:nth-child(even) {{ background: #111B2E; }}
-    tr:nth-child(odd) {{ background: #0D1526; }}
-    tr:hover {{ background: #1A2744; }}
-</style>
-</head>
-<body>
-{_nav("stress_testing.html")}
+    html = f"""<div id="page-stress" class="page">
 <h1 data-i18n="title_stress">Portfolio Stress Testing</h1>
 <p class="info" data-i18n="info_stress">Simulated impact of market-wide moves on portfolio value using beta, including option hedging effects.</p>
 <div class="summary-box">
-    <div class="item"><div class="label">Portfolio Value (CAD)</div><div class="value dollar-amount">${portfolio_value:,.0f}</div></div>
-    <div class="item"><div class="label">Portfolio Value (USD)</div><div class="value dollar-amount">${portfolio_value_usd:,.0f}</div></div>
+    <div class="item"><div class="label" data-i18n="st_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">${portfolio_value:,.0f}</div></div>
+    <div class="item"><div class="label" data-i18n="st_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">${portfolio_value_usd:,.0f}</div></div>
     <div class="item"><div class="label" data-i18n="st_beta">Portfolio Beta</div><div class="value">{beta:.3f}</div></div>
-    <div class="item"><div class="label">Option Delta (CAD)</div><div class="value dollar-amount">${option_delta_cad:+,.0f}</div></div>
-    <div class="item"><div class="label">Option Delta (USD)</div><div class="value dollar-amount">${option_delta_usd_val:+,.0f}</div></div>
+    <div class="item"><div class="label" data-i18n="st_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">${option_delta_cad:+,.0f}</div></div>
+    <div class="item"><div class="label" data-i18n="st_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">${option_delta_usd_val:+,.0f}</div></div>
     <div class="item"><div class="label" data-i18n="st_1y_ret">1Y Portfolio Return</div><div class="value {'positive' if ann_return > 0 else 'negative'}">{ann_return:.2%}</div></div>
+    <div class="ccy-switch-wrap">
+        <span class="ccy-label active" id="ccy-lbl-cad">CAD</span>
+        <label class="ccy-switch"><input type="checkbox" id="ccy-toggle" onchange="stressToggleCurrency()"><span class="ccy-slider"></span></label>
+        <span class="ccy-label" id="ccy-lbl-usd">USD</span>
+    </div>
 </div>
-
-<button class="currency-toggle active" id="ccy-toggle" onclick="toggleCurrency()">Showing: CAD &mdash; click for USD</button>
-
 <table id="stress-table">
-<thead>
-<tr>
+<thead><tr>
     <th data-i18n="th_scenario">Scenario</th>
     <th data-i18n="th_mkt_move">Market Move</th>
     <th data-i18n="th_unhedged_pct">Unhedged Impact (%)</th>
-    <th>Unhedged Impact ($)</th>
-    <th>Option Hedge P&amp;L ($)</th>
+    <th data-i18n="th_unhedged_d">Unhedged Impact ($)</th>
+    <th data-i18n="th_opt_pnl">Option Hedge P&amp;L ($)</th>
     <th data-i18n="th_hedged_pct">Hedged Impact (%)</th>
-    <th>Hedged Impact ($)</th>
-    <th>Estimated NAV</th>
-</tr>
-</thead>
+    <th data-i18n="th_hedged_d">Hedged Impact ($)</th>
+    <th data-i18n="th_est_nav">Estimated NAV</th>
+</tr></thead>
 <tbody>
 """
 
     _sc_i18n = {
-        "Bear Capitulation (-50%)": "sc_bear", "Deep Crash (-40%)": "sc_deep",
-        "Major Crash (-30%)": "sc_major_crash", "Market Crash (-20%)": "sc_crash",
-        "Severe Correction (-15%)": "sc_severe", "Major Correction (-10%)": "sc_major_corr",
-        "Minor Correction (-5%)": "sc_minor", "Flat (0%)": "sc_flat",
-        "Modest Rally (+5%)": "sc_modest", "Moderate Rally (+10%)": "sc_moderate",
-        "Strong Rally (+15%)": "sc_strong", "Bull Run (+20%)": "sc_bull",
-        "Major Surge (+30%)": "sc_surge", "Euphoric Rally (+50%)": "sc_euphoric",
+        "Depression (-50%)": "sc_bear", "Severe Bear (-40%)": "sc_deep",
+        "Bear Market (-30%)": "sc_major_crash", "Market Crash (-20%)": "sc_crash",
+        "Severe Correction (-15%)": "sc_severe", "Correction (-10%)": "sc_major_corr",
+        "Flash Crash (-5%)": "sc_minor",
+        "Mild Pullback (-3%)": "sc_mild_pullback",
+        "Rally (+5%)": "sc_modest", "Strong Rally (+10%)": "sc_moderate",
+        "Bull Run (+20%)": "sc_bull", "Euphoria (+30%)": "sc_surge",
+        "Bubble (+40%)": "sc_bubble", "Mania (+50%)": "sc_euphoric",
     }
 
     for _, row in stress_df.iterrows():
@@ -1309,368 +1562,34 @@ def generate_html_stress_testing(stress_df, portfolio_value, beta, option_delta_
     <td class="dollar-amount ccy-cell" data-cad="{nav_cad:.0f}" data-usd="{nav_cad / usd_cad_rate:.0f}">${nav_cad:,.0f}</td>
 </tr>\n"""
 
-    html += f"""</tbody>
-</table>
-<script>
-(function() {{
-    var showCAD = true;
-    window.toggleCurrency = function() {{
-        showCAD = !showCAD;
-        var btn = document.getElementById('ccy-toggle');
-        btn.textContent = showCAD ? 'Showing: CAD \\u2014 click for USD' : 'Showing: USD \\u2014 click for CAD';
-        document.querySelectorAll('.ccy-cell').forEach(function(td) {{
-            var raw = showCAD ? parseFloat(td.getAttribute('data-cad')) : parseFloat(td.getAttribute('data-usd'));
-            if (isNaN(raw)) return;
-            var sign = raw >= 0 ? '' : '-';
-            var abs = Math.abs(raw);
-            var formatted = abs.toLocaleString('en-US', {{maximumFractionDigits: 0}});
-            var hasPlus = td.getAttribute('data-cad') && parseFloat(td.getAttribute('data-cad')) !== parseFloat(td.textContent.replace(/[$,+]/g, ''));
-            if (td.textContent.indexOf('+') === 1 || td.textContent.indexOf('-') === 1) {{
-                td.textContent = '$' + (raw >= 0 ? '+' : '') + (raw < 0 ? '-' : '') + formatted;
-            }} else {{
-                td.textContent = '$' + sign + formatted;
-            }}
-        }});
-    }};
-}})();
-</script>
-<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-</body></html>"""
-    return html
+    html += """</tbody></table>
+</div>"""
 
-
-def generate_html_positions(portfolio_df, opts_df, fund_df, portfolio_value, usd_cad_rate=1.37):
-    """Generate positions analytics HTML with sortable table."""
-    # Merge with fundamentals
-    fund_cols = ["Symbol", "Type", "Beta", "Industry"]
-    if "P/E" in fund_df.columns:
-        fund_cols.append("P/E")
-    available_cols = [c for c in fund_cols if c in fund_df.columns]
-    merged = portfolio_df.merge(fund_df[available_cols], on="Symbol", how="left")
-
-    merged.loc[merged["PositionType"] == "Cash", "Type"] = "Cash"
-    merged.loc[merged["PositionType"] == "Cash", "Beta"] = 0.0
-
-    merged["Weight"] = merged["Mkt Value (CAD)"] / portfolio_value if portfolio_value else 0
-
-    # Count options by underlying
-    option_counts = opts_df.groupby("Symbol").size().to_dict()
-
-    # Add option-only tickers (tickers with options but 0 shares in portfolio)
-    portfolio_symbols = set(merged["Symbol"].unique())
-    option_only_symbols = [s for s in opts_df["Symbol"].unique() if s not in portfolio_symbols]
-    if option_only_symbols:
-        opt_only_rows = []
-        for sym in option_only_symbols:
-            opt_rows = opts_df[opts_df["Symbol"] == sym]
-            sector = opt_rows["Sector"].iloc[0] if "Sector" in opt_rows.columns and not opt_rows["Sector"].isna().all() else "-"
-            currency = opt_rows["Currency"].iloc[0] if "Currency" in opt_rows.columns and not opt_rows["Currency"].isna().all() else "USD"
-            # Look up beta and industry from fund_df
-            fund_row = fund_df[fund_df["Symbol"] == sym]
-            beta = fund_row["Beta"].values[0] if len(fund_row) > 0 and "Beta" in fund_row.columns and pd.notna(fund_row["Beta"].values[0]) else None
-            industry = fund_row["Industry"].values[0] if len(fund_row) > 0 and "Industry" in fund_row.columns and pd.notna(fund_row["Industry"].values[0]) else "-"
-            ftype = fund_row["Type"].values[0] if len(fund_row) > 0 and "Type" in fund_row.columns and pd.notna(fund_row["Type"].values[0]) else "-"
-
-            opt_only_rows.append({
-                "Symbol": sym,
-                "Shares": 0,
-                "Price": 0,
-                "Currency": currency,
-                "Mkt Value": 0,
-                "Mkt Value (CAD)": 0,
-                "Sector": sector,
-                "Account": "Options Only",
-                "PositionType": "Options Only",
-                "Type": ftype,
-                "Beta": beta,
-                "Industry": industry,
-                "Weight": 0,
-            })
-        opt_only_df = pd.DataFrame(opt_only_rows)
-        merged = pd.concat([merged, opt_only_df], ignore_index=True)
-
-    # Summary KPIs
-    num_positions = len(merged)
-    total_value = merged["Mkt Value (CAD)"].sum()
-    num_stocks = len(merged[merged.get("Type", pd.Series(dtype=str)) == "Stock"]) if "Type" in merged.columns else 0
-    num_etfs = len(merged[merged.get("Type", pd.Series(dtype=str)) == "ETF"]) if "Type" in merged.columns else 0
-    num_mfs = len(merged[merged["PositionType"] == "Mutual Fund"])
-    num_options = len(opts_df)
-    cash_total = merged[merged["PositionType"] == "Cash"]["Mkt Value (CAD)"].sum()
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Positions</title>
-<style>
-    {COMMON_CSS}
-    .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }}
-    .kpi-card {{ background: #1C2541; border-radius: 8px; padding: 14px; border-left: 4px solid #3A7BD5; }}
-    .kpi-label {{ color: #8899AA; font-size: 11px; text-transform: uppercase; }}
-    .kpi-value {{ font-size: 20px; font-weight: bold; color: #D4A843; }}
-    table {{ border-collapse: collapse; width: 100%; }}
-    th {{ background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; cursor: pointer; user-select: none; }}
-    th:hover {{ background: #2A3F5F; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }}
-    tr:nth-child(even) {{ background: #111B2E; }}
-    tr:nth-child(odd) {{ background: #0D1526; }}
-    tr:hover {{ background: #1A2744; }}
-    .weight-bar {{ height: 8px; background: #3A7BD5; border-radius: 4px; min-width: 2px; }}
-    .opt-badge {{ background: #D4A843; color: #0B1220; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; font-weight: bold; }}
-    .opt-only-badge {{ background: #7A5BD5; color: white; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; font-weight: bold; }}
-</style>
-</head>
-<body>
-{_nav("positions.html")}
-<h1 data-i18n="title_positions">Portfolio Positions</h1>
-<p class="info" data-i18n="info_positions">All positions including stocks, ETFs, mutual funds, and cash. Click column headers to sort.</p>
-<div class="kpi-grid">
+    js = """
+var stressShowCAD = true;
+function stressToggleCurrency() {
+    var cb = document.getElementById('ccy-toggle');
+    stressShowCAD = !cb.checked;
+    document.getElementById('ccy-lbl-cad').classList.toggle('active', stressShowCAD);
+    document.getElementById('ccy-lbl-usd').classList.toggle('active', !stressShowCAD);
+    document.querySelectorAll('.ccy-cell').forEach(function(td) {
+        var raw = stressShowCAD ? parseFloat(td.getAttribute('data-cad')) : parseFloat(td.getAttribute('data-usd'));
+        if (isNaN(raw)) return;
+        var formatted = Math.abs(raw).toLocaleString('en-US', {maximumFractionDigits: 0});
+        var origText = td.textContent.trim();
+        if (origText.charAt(0) === '$' && (origText.charAt(1) === '+' || origText.charAt(1) === '-')) {
+            td.textContent = '$' + (raw >= 0 ? '+' : '-') + formatted;
+        } else {
+            td.textContent = '$' + (raw < 0 ? '-' : '') + formatted;
+        }
+    });
+}
 """
-
-    _pos_i18n = {"Total Positions": "pos_total", "Portfolio Value (CAD)": "pos_pv_cad",
-                  "Stocks": "pos_stocks", "ETFs": "pos_etfs", "Mutual Funds": "pos_mf",
-                  "Option Contracts": "pos_opt_contracts", "Cash": "pos_cash"}
-
-    for label, value in [
-        ("Total Positions", str(num_positions)),
-        ("Portfolio Value (CAD)", f"${total_value:,.0f}"),
-        ("Stocks", str(num_stocks)),
-        ("ETFs", str(num_etfs)),
-        ("Mutual Funds", str(num_mfs)),
-        ("Option Contracts", str(num_options)),
-        ("Cash", f"${cash_total:,.0f}"),
-    ]:
-        dollar_cls = " dollar-amount" if value.startswith("$") else ""
-        i18n_key = _pos_i18n.get(label, "")
-        html += f'<div class="kpi-card"><div class="kpi-label" data-i18n="{i18n_key}">{label}</div><div class="kpi-value{dollar_cls}">{value}</div></div>\n'
-    html += '</div>\n'
-
-    merged["Mkt Value (USD)"] = merged.apply(
-        lambda r: r["Mkt Value"] if r.get("Currency") == "USD"
-        else r["Mkt Value (CAD)"] / usd_cad_rate, axis=1
-    )
-    merged["Mkt Value (USD)"] = merged["Mkt Value (USD)"].fillna(0)
-
-    # Column definitions: (header, is_numeric, i18n_key)
-    columns = [
-        ("#", True, "th_hash"), ("Symbol", False, "th_symbol"), ("Account", False, "th_account"),
-        ("Sector", False, "th_sector"), ("Type", False, "th_type"),
-        ("Shares", True, "th_shares"), ("Price", True, "th_price"), ("Currency", False, "th_currency"),
-        ("Mkt Value (CAD)", True, "th_mkt_cad"), ("Mkt Value (USD)", True, "th_mkt_usd"),
-        ("Weight", True, "th_weight"), ("Weight Bar", False, "th_weight_bar"),
-        ("Beta", True, "th_beta"), ("Industry", False, "th_industry"), ("Options", True, "th_options"),
-    ]
-
-    html += '<table id="positions-table"><thead><tr>'
-    for idx, (col_name, is_num, i18n_key) in enumerate(columns):
-        if col_name == "Weight Bar":
-            html += f'<th data-i18n="{i18n_key}">{col_name}</th>'
-        else:
-            html += f'<th onclick="sortTable(\'positions-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{col_name}</th>'
-    html += '</tr></thead><tbody>\n'
-
-    merged_sorted = merged.sort_values("Mkt Value (CAD)", ascending=False)
-    max_weight = merged_sorted["Weight"].max() if not merged_sorted.empty else 1
-
-    for idx, (_, row) in enumerate(merged_sorted.iterrows(), 1):
-        weight_pct = row["Weight"] * 100
-        bar_width = (row["Weight"] / max_weight * 100) if max_weight > 0 else 0
-        beta_val = f'{row["Beta"]:.2f}' if "Beta" in row and pd.notna(row.get("Beta")) else "-"
-        industry = row.get("Industry", "-")
-        if pd.isna(industry) or str(industry) == "#VALUE!":
-            industry = "-"
-        type_val = row.get("Type", "-")
-        if pd.isna(type_val):
-            type_val = "-"
-        sym = row["Symbol"]
-        opt_count = option_counts.get(sym, 0)
-        opt_badge = f'<span class="opt-badge">{opt_count} opts</span>' if opt_count > 0 else ""
-        is_opt_only = row.get("PositionType") == "Options Only"
-        if is_opt_only:
-            opt_badge = f'<span class="opt-only-badge">opts only</span>{opt_badge}'
-        account = row.get("Account", "-")
-        if pd.isna(account):
-            account = "-"
-
-        mkt_usd = row.get("Mkt Value (USD)", 0)
-        if pd.isna(mkt_usd):
-            mkt_usd = 0
-
-        html += f"""<tr>
-    <td data-val="{idx}">{idx}</td>
-    <td><strong>{sym}</strong>{opt_badge}</td>
-    <td>{account}</td>
-    <td>{row.get('Sector', '-')}</td>
-    <td>{type_val}</td>
-    <td data-val="{row['Shares']}" class="dollar-amount">{row['Shares']:,.0f}</td>
-    <td data-val="{row['Price']}">{row['Price']:,.2f}</td>
-    <td>{row['Currency']}</td>
-    <td data-val="{row['Mkt Value (CAD)']}" class="dollar-amount">${row['Mkt Value (CAD)']:,.0f}</td>
-    <td data-val="{mkt_usd}" class="dollar-amount">${mkt_usd:,.0f}</td>
-    <td data-val="{weight_pct:.4f}">{weight_pct:.2f}%</td>
-    <td><div class="weight-bar" style="width:{bar_width:.0f}%"></div></td>
-    <td data-val="{row.get('Beta', 0) if pd.notna(row.get('Beta')) else 0}">{beta_val}</td>
-    <td>{industry}</td>
-    <td data-val="{opt_count}">{opt_count if opt_count > 0 else '-'}</td>
-</tr>\n"""
-
-    html += '</tbody></table>\n'
-    html += SORTABLE_JS
-    html += f'<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>'
-    html += "</body></html>"
-    return html
+    return html, js
 
 
-def generate_html_options(opts_df, option_delta_df, total_delta_usd, usd_cad_rate=1.37):
-    """Generate dedicated options page with live prices and contract values."""
-    total_delta_cad = total_delta_usd * usd_cad_rate
-
-    total_contracts = len(opts_df)
-    calls = len(opts_df[opts_df["Type"] == "CALL"]) if "Type" in opts_df.columns else 0
-    puts = len(opts_df[opts_df["Type"] == "PUT"]) if "Type" in opts_df.columns else 0
-
-    # Compute total options holding value (CAD)
-    total_opt_value_cad = 0.0
-    if "Opt Price" in opts_df.columns:
-        for _, row in opts_df.iterrows():
-            opt_price = row.get("Opt Price", 0) or 0
-            shares = row.get("Shares", 0) or 0
-            currency = row.get("Currency", "USD")
-            fx = usd_cad_rate if currency == "USD" else 1.0
-            total_opt_value_cad += opt_price * shares * fx
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Options Positions</title>
-<style>
-    {COMMON_CSS}
-    .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }}
-    .kpi-card {{ background: #1C2541; border-radius: 8px; padding: 14px; border-left: 4px solid #D4A843; }}
-    .kpi-label {{ color: #8899AA; font-size: 11px; text-transform: uppercase; }}
-    .kpi-value {{ font-size: 20px; font-weight: bold; color: #D4A843; }}
-    table {{ border-collapse: collapse; width: 100%; }}
-    th {{ background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; position: sticky; top: 0; cursor: pointer; user-select: none; }}
-    th:hover {{ background: #2A3F5F; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }}
-    tr:nth-child(even) {{ background: #111B2E; }}
-    tr:nth-child(odd) {{ background: #0D1526; }}
-    tr:hover {{ background: #1A2744; }}
-    .call {{ color: #00C49A; }}
-    .put {{ color: #FF6B6B; }}
-</style>
-</head>
-<body>
-{_nav("options.html")}
-<h1 data-i18n="title_options">Options Positions &amp; Delta Exposure</h1>
-<p class="info" data-i18n="info_options">All option contracts with live prices and estimated delta exposure. Negative shares = short position. Click headers to sort.</p>
-<div class="kpi-grid">
-"""
-
-    _opt_i18n = {
-        "Total Contracts": "opt_total", "Calls": "opt_calls", "Puts": "opt_puts",
-        "Options Value (CAD)": "opt_value_cad",
-        "Net Delta (USD)": "opt_delta_usd", "Net Delta (CAD)": "opt_delta_cad",
-    }
-
-    for label, value in [
-        ("Total Contracts", str(total_contracts)),
-        ("Calls", str(calls)),
-        ("Puts", str(puts)),
-        ("Options Value (CAD)", f"${total_opt_value_cad:,.0f}"),
-        ("Net Delta (USD)", f"${total_delta_usd:+,.0f}"),
-        ("Net Delta (CAD)", f"${total_delta_cad:+,.0f}"),
-    ]:
-        dollar_cls = " dollar-amount" if "$" in value else ""
-        i18n_key = _opt_i18n.get(label, "")
-        html += f'<div class="kpi-card"><div class="kpi-label" data-i18n="{i18n_key}">{label}</div><div class="kpi-value{dollar_cls}">{value}</div></div>\n'
-    html += '</div>\n'
-
-    # Options contracts table
-    html += '<h2 data-i18n="h2_opt_contracts">Option Contracts</h2>\n'
-    cols = [("#", False, "th_hash"), ("Symbol", False, "th_symbol"), ("Type", False, "th_type"),
-            ("Expiry", False, "th_expiry"), ("Strike", True, "th_strike"),
-            ("Shares", True, "th_shares"), ("UL Price", True, "th_ul_price"),
-            ("Opt Price", True, "th_opt_price"), ("Currency", False, "th_currency"),
-            ("Contract Value", True, "th_contract_value")]
-
-    html += '<table id="options-table"><thead><tr>'
-    for idx, (c, is_num, i18n_key) in enumerate(cols):
-        html += f'<th onclick="sortTable(\'options-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{c}</th>'
-    html += '</tr></thead><tbody>\n'
-
-    for idx, (_, row) in enumerate(opts_df.iterrows(), 1):
-        type_cls = "call" if row.get("Type") == "CALL" else "put"
-        expiry = row.get("Expiry", "")
-        if isinstance(expiry, (datetime, pd.Timestamp)):
-            expiry = expiry.strftime("%Y-%m-%d")
-        shares = row.get("Shares", 0) or 0
-        opt_price = row.get("Opt Price", 0) or 0
-        ul_price = row.get("Price", 0) or 0
-        currency = row.get("Currency", "USD")
-        fx = usd_cad_rate if currency == "USD" else 1.0
-        contract_value_cad = opt_price * shares * fx
-        val_cls = "positive" if contract_value_cad > 0 else "negative" if contract_value_cad < 0 else ""
-
-        html += f"""<tr>
-    <td>{idx}</td>
-    <td><strong>{row['Symbol']}</strong></td>
-    <td class="{type_cls}">{row.get('Type', '')}</td>
-    <td>{expiry}</td>
-    <td data-val="{row.get('Strike', 0)}" class="dollar-amount">{row.get('Strike', 0):,.1f}</td>
-    <td data-val="{shares}">{shares:,.0f}</td>
-    <td data-val="{ul_price}" class="dollar-amount">{ul_price:,.2f}</td>
-    <td data-val="{opt_price}" class="dollar-amount">{opt_price:,.2f}</td>
-    <td>{currency}</td>
-    <td data-val="{contract_value_cad}" class="{val_cls} dollar-amount">${contract_value_cad:+,.0f}</td>
-</tr>\n"""
-
-    html += '</tbody></table>\n'
-
-    # Delta exposure table
-    if not option_delta_df.empty:
-        html += '<h2 data-i18n="h2_delta_exposure">Delta Exposure by Position</h2>\n'
-        html += '<table id="delta-table"><thead><tr>'
-        delta_cols = [("#", False, "th_hash"), ("Symbol", False, "th_symbol"), ("Type", False, "th_type"),
-                      ("Strike", True, "th_strike"), ("Shares", True, "th_shares"),
-                      ("UL Price", True, "th_ul_price"), ("Moneyness", True, "th_moneyness"),
-                      ("Delta", True, "th_delta"), ("Net Delta", True, "th_net_delta"),
-                      ("Notional Delta (CAD)", True, "th_not_delta_cad")]
-        for idx, (c, is_num, i18n_key) in enumerate(delta_cols):
-            html += f'<th onclick="sortTable(\'delta-table\',{idx},{str(is_num).lower()})" data-i18n="{i18n_key}">{c}</th>'
-        html += '</tr></thead><tbody>\n'
-
-        for idx, (_, row) in enumerate(option_delta_df.iterrows(), 1):
-            type_cls = "call" if row["Type"] == "CALL" else "put"
-            delta_cls = "positive" if row["Notional Delta (CAD)"] > 0 else "negative"
-            html += f"""<tr>
-    <td>{idx}</td>
-    <td><strong>{row['Symbol']}</strong></td>
-    <td class="{type_cls}">{row['Type']}</td>
-    <td data-val="{row['Strike']}" class="dollar-amount">{row['Strike']:,.1f}</td>
-    <td data-val="{row['Shares']}">{row['Shares']:,.0f}</td>
-    <td data-val="{row['Underlying Price']}" class="dollar-amount">{row['Underlying Price']:,.2f}</td>
-    <td data-val="{row['Moneyness']}">{row['Moneyness']:.2f}</td>
-    <td data-val="{row['Delta']}">{row['Delta']:.3f}</td>
-    <td data-val="{row['Net Delta']}" class="dollar-amount">{row['Net Delta']:,.0f}</td>
-    <td data-val="{row['Notional Delta (CAD)']}" class="{delta_cls} dollar-amount">${row['Notional Delta (CAD)']:+,.0f}</td>
-</tr>\n"""
-
-        html += '</tbody></table>\n'
-
-    html += SORTABLE_JS
-    html += f'<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>'
-    html += "</body></html>"
-    return html
-
-
-def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_cad_rate=1.37):
-    """Generate sector and currency exposure HTML."""
-    # Use actual option contract value (opt price x shares) instead of notional
+def _generate_exposure_section(portfolio_df, opts_df, portfolio_value, usd_cad_rate=1.37):
+    """Generate exposure analysis tab content."""
     opts_sector = opts_df.copy()
     if "Opt Price" in opts_sector.columns:
         opts_sector["Mkt Value (CAD)"] = opts_sector.apply(
@@ -1687,16 +1606,13 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
         else r["Mkt Value (CAD)"] / usd_cad_rate, axis=1
     )
     portfolio_with_usd["Mkt Value (USD)"] = portfolio_with_usd["Mkt Value (USD)"].fillna(0)
-
     opts_sector["Mkt Value (USD)"] = opts_sector["Mkt Value (CAD)"] / usd_cad_rate
     opts_sector["Mkt Value (USD)"] = opts_sector["Mkt Value (USD)"].fillna(0)
 
-    # Combine stock positions + option contract values
     port_cols = ["Symbol", "Sector", "Mkt Value (CAD)", "Mkt Value (USD)", "Currency"]
     opt_cols = ["Symbol", "Sector", "Mkt Value (CAD)", "Mkt Value (USD)"]
     if "Currency" in opts_sector.columns:
         opt_cols.append("Currency")
-
     all_positions = pd.concat([
         portfolio_with_usd[port_cols],
         opts_sector[opt_cols],
@@ -1704,7 +1620,6 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
     all_positions["Mkt Value (CAD)"] = all_positions["Mkt Value (CAD)"].fillna(0)
     all_positions["Mkt Value (USD)"] = all_positions["Mkt Value (USD)"].fillna(0)
 
-    # Sector aggregation
     sector_data = all_positions.groupby("Sector").agg(
         total_value=("Mkt Value (CAD)", "sum"),
         total_value_usd=("Mkt Value (USD)", "sum"),
@@ -1714,7 +1629,6 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
     sector_data["Weight"] = sector_data["total_value"] / total_sector if total_sector else 0
     sector_data = sector_data.sort_values("total_value", ascending=False)
 
-    # Currency aggregation (portfolio + options)
     all_with_currency = all_positions[all_positions["Currency"].notna()].copy()
     currency_data = all_with_currency.groupby("Currency").agg(
         total_value=("Mkt Value (CAD)", "sum"),
@@ -1724,7 +1638,6 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
     currency_data["Weight"] = currency_data["total_value"] / total_cur if total_cur else 0
     currency_data = currency_data.sort_values("total_value", ascending=False)
 
-    # Account aggregation (portfolio + options)
     opts_with_account = opts_sector[["Symbol", "Account", "Mkt Value (CAD)"]].copy() if "Account" in opts_sector.columns else pd.DataFrame()
     port_with_account = portfolio_df[["Symbol", "Account", "Mkt Value (CAD)"]].copy()
     all_with_account = pd.concat([port_with_account, opts_with_account], ignore_index=True)
@@ -1737,31 +1650,7 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
     account_data["Weight"] = account_data["total_value"] / total_acct if total_acct else 0
     account_data = account_data.sort_values("total_value", ascending=False)
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Exposure Analysis</title>
-<style>
-    {COMMON_CSS}
-    .grid-3col {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; }}
-    @media (max-width: 1200px) {{ .grid-3col {{ grid-template-columns: 1fr 1fr; }} }}
-    @media (max-width: 800px) {{ .grid-3col {{ grid-template-columns: 1fr; }} }}
-    table {{ border-collapse: collapse; width: 100%; }}
-    th {{ background: #1C2541; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }}
-    td {{ padding: 8px 12px; border-bottom: 1px solid #1A2744; font-size: 13px; }}
-    tr:nth-child(even) {{ background: #111B2E; }}
-    tr:nth-child(odd) {{ background: #0D1526; }}
-    tr:hover {{ background: #1A2744; }}
-    .weight-bar {{ height: 10px; border-radius: 5px; min-width: 2px; }}
-    .sector-colors {{ background: linear-gradient(90deg, #3A7BD5, #00C49A); }}
-    .currency-colors {{ background: linear-gradient(90deg, #D4A843, #E07A3A); }}
-    .account-colors {{ background: linear-gradient(90deg, #7A5BD5, #BD5BA8); }}
-</style>
-</head>
-<body>
-{_nav("sector_exposure.html")}
+    html = """<div id="page-exposure" class="page">
 <h1 data-i18n="title_exposure">Portfolio Exposure Analysis</h1>
 <p class="info" data-i18n="info_exposure">Breakdown by sector (including option notional), currency, and brokerage account.</p>
 <div class="grid-3col">
@@ -1824,103 +1713,158 @@ def generate_html_sector_exposure(portfolio_df, opts_df, portfolio_value, usd_ca
     <td><div class="weight-bar account-colors" style="width:{bar_w:.0f}%"></div></td>
 </tr>\n"""
 
-    html += f"""</tbody></table>
+    html += """</tbody></table>
 </div></div>
-<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-</body></html>"""
+</div>"""
     return html
 
 
-def generate_index_html(portfolio_value, metrics, num_positions, num_options, usd_cad_rate=1.37):
-    """Generate main dashboard page."""
-    sharpe = metrics.get("Sharpe Ratio", 0)
-    ann_ret = metrics.get("Annualized Return", 0)
-    max_dd = metrics.get("Maximum Drawdown", 0)
-    beta = metrics.get("Beta to SPY", "N/A")
-    beta_str = f"{beta:.2f}" if isinstance(beta, float) else str(beta)
-    delta_cad = metrics.get("Option Delta Exposure", 0)
-    delta_usd = metrics.get("Net Delta (USD)", 0)
-    portfolio_value_usd = portfolio_value / usd_cad_rate
+# ─── Single-Page Assembler ──────────────────────────────────────────────────
 
-    html = f"""<!DOCTYPE html>
+def generate_single_html(
+    portfolio_value, metrics, num_positions, num_options,
+    portfolio_df, opts_df, fund_df,
+    option_delta_df, total_delta_usd,
+    corr_matrix, individual_risk_df,
+    stress_df, beta_val,
+    usd_cad_rate=1.37,
+):
+    """Assemble all sections into a single HTML file with tab navigation."""
+    # Generate all sections
+    dashboard_html = _generate_dashboard_section(
+        portfolio_value, metrics, num_positions, num_options, usd_cad_rate)
+    positions_html = _generate_positions_section(
+        portfolio_df, opts_df, fund_df, portfolio_value, usd_cad_rate)
+    options_html = _generate_options_section(
+        opts_df, option_delta_df, total_delta_usd, usd_cad_rate)
+    correlation_html, correlation_js = _generate_correlation_section(corr_matrix)
+    risk_html = _generate_risk_section(
+        metrics, individual_risk_df, portfolio_value, usd_cad_rate)
+    stress_html, stress_js = _generate_stress_section(
+        stress_df, portfolio_value, beta_val, total_delta_usd,
+        usd_cad_rate=usd_cad_rate, ann_return=metrics.get("Annualized Return", 0))
+    exposure_html = _generate_exposure_section(
+        portfolio_df, opts_df, portfolio_value, usd_cad_rate)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Build nav HTML
+    nav_links = []
+    for page_id, label, i18n_key in TAB_PAGES:
+        nav_links.append(
+            f'<a data-page="{page_id}" onclick="showPage(\'{page_id}\')" data-i18n="{i18n_key}">{label}</a>')
+    nav_html = '<div class="nav">' + ''.join(nav_links)
+    nav_html += '<span class="spacer"></span>'
+    nav_html += f'<span class="timestamp"><span data-i18n="generated">Generated:</span> {timestamp}</span>'
+    nav_html += '<button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button>'
+    nav_html += '<button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button>'
+    nav_html += '</div>'
+
+    # Translations JSON for JS
+    translations_json = json.dumps(TRANSLATIONS, ensure_ascii=False)
+
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stock Portfolio Analytics Dashboard</title>
 <style>
-    {COMMON_CSS}
-    .header {{ background: linear-gradient(135deg, #1C2541 0%, #2A3F5F 100%); padding: 30px; border-radius: 12px; margin-bottom: 24px; }}
-    .header h1 {{ margin: 0 0 8px 0; font-size: 28px; border: none; padding: 0; }}
-    .header p {{ margin: 0; color: #8899AA; font-size: 14px; }}
-    .kpi-strip {{ display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }}
-    .kpi-mini {{ background: #1C2541; border-radius: 8px; padding: 16px 20px; flex: 1; min-width: 180px; }}
-    .kpi-mini .label {{ color: #8899AA; font-size: 11px; text-transform: uppercase; }}
-    .kpi-mini .value {{ font-size: 22px; font-weight: bold; color: #D4A843; margin-top: 4px; }}
-    .cards {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }}
-    .card {{ background: #1C2541; border-radius: 10px; padding: 24px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; border: 1px solid #2A3F5F; }}
-    .card:hover {{ transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); border-color: #3A7BD5; }}
-    .card h2 {{ margin: 0 0 10px 0; font-size: 18px; color: #E0E0E0; border: none; padding: 0; }}
-    .card p {{ margin: 0; color: #8899AA; font-size: 13px; line-height: 1.5; }}
-    .card .icon {{ font-size: 36px; margin-bottom: 12px; }}
-    .disclaimer {{ margin-top: 18px; color: #8899AA; font-size: 12px; }}
+{COMBINED_CSS}
 </style>
 </head>
 <body>
-{_nav("index.html")}
-<div class="header">
-    <h1 data-i18n="title_dashboard">Stock Portfolio Analytics Dashboard</h1>
-    <p data-i18n="desc_dashboard">Comprehensive portfolio analysis with risk metrics, correlations, option hedging, and stress testing</p>
-</div>
+{nav_html}
+{dashboard_html}
+{positions_html}
+{options_html}
+{correlation_html}
+{risk_html}
+{stress_html}
+{exposure_html}
+<div id="cell-tooltip"></div>
 
-<div class="kpi-strip">
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">${portfolio_value:,.0f}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">${portfolio_value_usd:,.0f}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_ann_ret">Annualized Return</div><div class="value positive">{ann_ret:.2%}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_sharpe">Sharpe Ratio</div><div class="value">{sharpe:.2f}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_max_dd">Max Drawdown</div><div class="value negative">{max_dd:.2%}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_beta">Beta to SPY</div><div class="value">{beta_str}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_pos_opt">Positions / Options</div><div class="value">{num_positions} / {num_options}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">${delta_cad:+,.0f}</div></div>
-    <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">${delta_usd:+,.0f}</div></div>
-</div>
+<script>
+// ─── Tab Navigation ─────────────────────────────────────────────────────────
+function showPage(pageId) {{
+    document.querySelectorAll('.page').forEach(function(p) {{ p.classList.remove('active'); }});
+    document.querySelectorAll('.nav a[data-page]').forEach(function(a) {{ a.classList.remove('active'); }});
+    var page = document.getElementById('page-' + pageId);
+    if (page) page.classList.add('active');
+    var link = document.querySelector('.nav a[data-page="' + pageId + '"]');
+    if (link) link.classList.add('active');
+    history.replaceState(null, '', '#' + pageId);
+    window.scrollTo(0, 0);
+}}
+window.addEventListener('hashchange', function() {{
+    var page = location.hash.replace('#', '') || 'dashboard';
+    showPage(page);
+}});
+document.addEventListener('DOMContentLoaded', function() {{
+    var page = location.hash.replace('#', '') || 'dashboard';
+    showPage(page);
+}});
 
-<div class="cards">
-    <a class="card" href="positions.html">
-        <div class="icon">&#128202;</div>
-        <h2 data-i18n="card_positions">Positions</h2>
-        <p data-i18n="card_positions_desc">All portfolio positions: stocks, ETFs, mutual funds, cash. Market values, weights, beta, and industry. Sortable columns.</p>
-    </a>
-    <a class="card" href="options.html">
-        <div class="icon">&#128203;</div>
-        <h2 data-i18n="card_options">Options</h2>
-        <p data-i18n="card_options_desc">All option contracts with delta exposure analysis. Calls, puts, spreads, and their hedging impact on the portfolio.</p>
-    </a>
-    <a class="card" href="correlation_matrix.html">
-        <div class="icon">&#128279;</div>
-        <h2 data-i18n="card_correlation">Correlation Matrix</h2>
-        <p data-i18n="card_correlation_desc">Pairwise return correlations with heatmap. Click tickers to sort. Hover cells for ticker pair details.</p>
-    </a>
-    <a class="card" href="risk_metrics.html">
-        <div class="icon">&#9888;</div>
-        <h2 data-i18n="card_risk">Risk Metrics</h2>
-        <p data-i18n="card_risk_desc">VaR, Sharpe, Sortino, Calmar, Maximum Drawdown, Beta, option hedging impact. Hover cards for term explanations.</p>
-    </a>
-    <a class="card" href="stress_testing.html">
-        <div class="icon">&#128293;</div>
-        <h2 data-i18n="card_stress">Stress Testing</h2>
-        <p data-i18n="card_stress_desc">Scenario analysis from -50% crash to +50% rally, showing both unhedged and option-hedged impacts with 1Y return context.</p>
-    </a>
-    <a class="card" href="sector_exposure.html">
-        <div class="icon">&#127991;</div>
-        <h2 data-i18n="card_exposure">Sector, Currency &amp; Account Exposure</h2>
-        <p data-i18n="card_exposure_desc">Portfolio breakdown by sector allocation (incl. option notional), currency denomination, and brokerage account.</p>
-    </a>
-</div>
-<p class="disclaimer" data-i18n="disclaimer">Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.</p>
-<p class="timestamp"><span data-i18n="generated">Generated:</span> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-</body></html>"""
-    return html
+// ─── Privacy Toggle ─────────────────────────────────────────────────────────
+(function() {{
+    var key = 'portfolio_privacy_mode';
+    if (localStorage.getItem(key) === 'true') {{
+        document.body.classList.add('privacy-mode');
+    }}
+    window.togglePrivacy = function() {{
+        document.body.classList.toggle('privacy-mode');
+        localStorage.setItem(key, document.body.classList.contains('privacy-mode'));
+        var btn = document.getElementById('privacy-btn');
+        if (btn) {{
+            btn.setAttribute('data-i18n', document.body.classList.contains('privacy-mode') ? 'privacy_show' : 'privacy_hide');
+            if (window.applyLanguage) applyLanguage();
+        }}
+    }};
+    document.addEventListener('DOMContentLoaded', function() {{
+        var btn = document.getElementById('privacy-btn');
+        if (btn && document.body.classList.contains('privacy-mode')) {{
+            btn.setAttribute('data-i18n', 'privacy_show');
+        }}
+    }});
+}})();
+
+// ─── Language Toggle ────────────────────────────────────────────────────────
+(function() {{
+    var T = {translations_json};
+    var langKey = 'portfolio_language';
+    function getLang() {{ return localStorage.getItem(langKey) || 'en'; }}
+    window.applyLanguage = function() {{
+        var lang = getLang();
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {{
+            var k = el.getAttribute('data-i18n');
+            if (T[k] && T[k][lang]) el.textContent = T[k][lang];
+        }});
+        document.querySelectorAll('[data-i18n-html]').forEach(function(el) {{
+            var k = el.getAttribute('data-i18n-html');
+            if (T[k] && T[k][lang]) el.innerHTML = T[k][lang];
+        }});
+        var langBtn = document.getElementById('lang-btn');
+        if (langBtn) langBtn.textContent = lang === 'en' ? '中' : 'En';
+    }};
+    window.toggleLanguage = function() {{
+        var lang = getLang() === 'en' ? 'zh' : 'en';
+        localStorage.setItem(langKey, lang);
+        applyLanguage();
+    }};
+    document.addEventListener('DOMContentLoaded', applyLanguage);
+}})();
+
+// ─── Sortable Tables ────────────────────────────────────────────────────────
+{SORTABLE_JS}
+
+// ─── Correlation Matrix JS ──────────────────────────────────────────────────
+{correlation_js}
+
+// ─── Stress Testing Currency Toggle ─────────────────────────────────────────
+{stress_js}
+</script>
+</body>
+</html>"""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1929,7 +1873,7 @@ def generate_index_html(portfolio_value, metrics, num_positions, num_options, us
 
 def main():
     print("=" * 60)
-    print("Stock Portfolio Analytics Report Generator v2")
+    print("Stock Portfolio Analytics Report Generator v3 (Single-Page)")
     print("=" * 60)
 
     # 1. Read all data
@@ -1946,7 +1890,7 @@ def main():
         sub = portfolio_df[portfolio_df["PositionType"] == ptype]["Mkt Value (CAD)"].sum()
         print(f"    {ptype}: ${sub:,.0f}")
 
-    # 3. Collect all tradeable tickers (portfolio + option underlyings)
+    # 3. Collect all tradeable tickers
     non_tradeable = {"Cash", "Short Cash"}
     stock_tickers = [t for t in portfolio_df["Symbol"].unique() if t not in non_tradeable]
     option_underlyings = opts_df["Symbol"].unique().tolist()
@@ -1954,15 +1898,13 @@ def main():
     all_tickers = sorted(set(stock_tickers + extra_tickers))
     print(f"\n  Unique tradeable tickers (stocks+options): {len(all_tickers)}")
 
-    # 4. Fetch fundamentals (sector, beta, industry) from yfinance
+    # 4. Fetch fundamentals
     fund_df = fetch_fundamentals(all_tickers)
-
-    # Back-fill Sector on portfolio_df and opts_df from fundamentals
     sector_map = dict(zip(fund_df["Symbol"], fund_df["Sector"]))
     portfolio_df["Sector"] = portfolio_df["Symbol"].map(sector_map).fillna("")
     opts_df["Sector"] = opts_df["Symbol"].map(sector_map).fillna("")
 
-    # 5. Fetch live option prices and attach to opts_df
+    # 5. Fetch live option prices
     opt_prices = fetch_option_prices(opts_df)
     opts_df["Opt Price"] = opt_prices
 
@@ -1988,13 +1930,11 @@ def main():
         if t in portfolio_df["Symbol"].values:
             total_mkt = portfolio_df[portfolio_df["Symbol"] == t]["Mkt Value (CAD)"].sum()
             weight_series[t] = total_mkt
-
     if not option_delta_df.empty:
         for _, orow in option_delta_df.iterrows():
             sym = orow["Symbol"]
             if sym in weight_series.index:
                 weight_series[sym] += orow["Notional Delta (CAD)"]
-
     total_weight = weight_series.sum()
     if total_weight != 0:
         weight_series = weight_series / total_weight
@@ -2003,7 +1943,7 @@ def main():
     print("\nComputing correlation matrix...")
     corr = compute_correlation_matrix(returns)
 
-    # 11. Risk metrics (with option hedging)
+    # 11. Risk metrics
     print("Computing risk metrics...")
     metrics, portfolio_returns = compute_risk_metrics(
         returns, weight_series, portfolio_value, total_delta_usd, usd_cad_rate=usd_cad_rate
@@ -2020,7 +1960,7 @@ def main():
         else:
             print(f"  {key}: {v}")
 
-    # 12. Stress testing (with option hedging)
+    # 12. Stress testing
     beta_val = metrics.get("Beta to SPY", 1.0)
     if not isinstance(beta_val, (int, float)):
         beta_val = 1.0
@@ -2030,7 +1970,7 @@ def main():
         beta_val, total_delta_usd, usd_cad_rate=usd_cad_rate,
     )
 
-    # 13. Individual risk (compute beta from SPY returns for tickers without it)
+    # 13. Individual risk
     print("Computing individual position risk...")
     spy_returns_for_beta = None
     if "SPY" in returns.columns:
@@ -2048,29 +1988,29 @@ def main():
     individual_risk = compute_individual_risk(returns, fund_df, spy_returns=spy_returns_for_beta)
     print(f"  Computed risk metrics for {len(individual_risk)} tickers")
 
-    # 14. Generate HTML reports
-    print("\nGenerating HTML reports...")
+    # 14. Generate single HTML report
+    print("\nGenerating single-page HTML report...")
+    html = generate_single_html(
+        portfolio_value=portfolio_value,
+        metrics=metrics,
+        num_positions=len(portfolio_df),
+        num_options=len(opts_df),
+        portfolio_df=portfolio_df,
+        opts_df=opts_df,
+        fund_df=fund_df,
+        option_delta_df=option_delta_df,
+        total_delta_usd=total_delta_usd,
+        corr_matrix=corr,
+        individual_risk_df=individual_risk,
+        stress_df=stress_df,
+        beta_val=beta_val,
+        usd_cad_rate=usd_cad_rate,
+    )
 
-    reports = {
-        "index.html": generate_index_html(portfolio_value, metrics, len(portfolio_df), len(opts_df), usd_cad_rate=usd_cad_rate),
-        "positions.html": generate_html_positions(portfolio_df, opts_df, fund_df, portfolio_value, usd_cad_rate=usd_cad_rate),
-        "options.html": generate_html_options(opts_df, option_delta_df, total_delta_usd, usd_cad_rate=usd_cad_rate),
-        "correlation_matrix.html": generate_html_correlation(corr),
-        "risk_metrics.html": generate_html_risk_metrics(metrics, individual_risk, portfolio_value, usd_cad_rate=usd_cad_rate),
-        "stress_testing.html": generate_html_stress_testing(
-            stress_df, portfolio_value, beta_val, total_delta_usd,
-            usd_cad_rate=usd_cad_rate, ann_return=metrics.get("Annualized Return", 0),
-        ),
-        "sector_exposure.html": generate_html_sector_exposure(
-            portfolio_df, opts_df, portfolio_value, usd_cad_rate=usd_cad_rate,
-        ),
-    }
-
-    for filename, content in reports.items():
-        filepath = OUTPUT_DIR / filename
-        filepath.write_text(content, encoding="utf-8")
-        size_kb = filepath.stat().st_size / 1024
-        print(f"  Written: {filename} ({size_kb:.1f} KB)")
+    filepath = OUTPUT_DIR / "index.html"
+    filepath.write_text(html, encoding="utf-8")
+    size_kb = filepath.stat().st_size / 1024
+    print(f"  Written: index.html ({size_kb:.1f} KB)")
 
     # JSON metrics
     metrics_json = {}
@@ -2086,8 +2026,7 @@ def main():
     print(f"  Written: risk_metrics.json")
 
     print("\n" + "=" * 60)
-    print("BUILD COMPLETE - 7 HTML reports + 1 JSON file generated")
-    print(f"Reports saved to: {OUTPUT_DIR}")
+    print("BUILD COMPLETE - 1 HTML report + 1 JSON file generated")
     print(f"Open index.html in a browser to view the dashboard.")
     print("=" * 60)
 
