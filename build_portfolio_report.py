@@ -235,6 +235,20 @@ def fetch_price_history(tickers, period_days=LOOKBACK_DAYS):
     return prices
 
 
+def fetch_latest_prices(price_history_df):
+    """Extract the latest closing price for each ticker from price history.
+
+    Uses the last available row of the already-fetched price history DataFrame
+    so no additional API calls are needed.
+
+    Returns a dict of {symbol: latest_price}.
+    """
+    if price_history_df.empty:
+        return {}
+    latest = price_history_df.iloc[-1]
+    return {sym: float(latest[sym]) for sym in price_history_df.columns if pd.notna(latest[sym])}
+
+
 def compute_returns(prices):
     """Compute daily log returns."""
     return np.log(prices / prices.shift(1)).dropna()
@@ -1919,6 +1933,36 @@ def main():
     if prices.empty:
         print("ERROR: Could not fetch price data. Exiting.")
         sys.exit(1)
+
+    # 7b. Update portfolio positions with latest live prices from yfinance
+    latest_prices = fetch_latest_prices(prices)
+    if latest_prices:
+        print(f"\nUpdating portfolio prices with latest live data ({len(latest_prices)} tickers)...")
+        non_tradeable = {"Cash", "Short Cash"}
+        updated_count = 0
+        for idx, row in portfolio_df.iterrows():
+            sym = row["Symbol"]
+            if sym in non_tradeable:
+                continue
+            if sym in latest_prices:
+                old_price = row["Price"]
+                new_price = latest_prices[sym]
+                currency = row.get("Currency", "USD")
+                shares = row["Shares"]
+                portfolio_df.at[idx, "Price"] = new_price
+                new_mkt_value = shares * new_price
+                portfolio_df.at[idx, "Mkt Value"] = new_mkt_value
+                if currency == "CAD":
+                    portfolio_df.at[idx, "Mkt Value (CAD)"] = new_mkt_value
+                else:
+                    portfolio_df.at[idx, "Mkt Value (CAD)"] = new_mkt_value * usd_cad_rate
+                if abs(old_price - new_price) > 0.005:
+                    print(f"    {sym}: ${old_price:,.2f} -> ${new_price:,.2f}")
+                    updated_count += 1
+        portfolio_value = portfolio_df["Mkt Value (CAD)"].sum()
+        print(f"  Updated {updated_count} prices. New portfolio value (CAD): ${portfolio_value:,.0f}")
+    else:
+        print("\n  WARNING: No live prices available; using spreadsheet prices.")
 
     # 8. Compute returns
     returns = compute_returns(prices)

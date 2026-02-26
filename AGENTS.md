@@ -498,7 +498,7 @@ The script produces a single `index.html` file (~160 KB) containing all analytic
 | Tab (hash) | Description |
 |------------|-------------|
 | `#dashboard` | **Dashboard** — Landing page with summary KPIs (portfolio value CAD/USD, annualized return, Sharpe ratio, max drawdown, beta, option delta CAD/USD), card links to all other tabs, and a footer disclaimer stating the content is informational/educational only and not investment advice. |
-| `#positions` | **Positions** — All holdings (stocks, ETFs, cash) with market values (CAD and USD), portfolio weights, beta, industry, and option badge counts. **Option-only tickers** (symbols with options but 0 shares) appear with a purple "opts only" badge. **Sortable columns** — click any header to sort ascending/descending. Privacy mode hides share counts and dollar amounts. |
+| `#positions` | **Positions** — All holdings (stocks, ETFs, cash) with **live prices fetched from yfinance** (latest closing price replaces stale spreadsheet values), recalculated market values (CAD and USD), portfolio weights, beta, industry, and option badge counts. **Option-only tickers** (symbols with options but 0 shares) appear with a purple "opts only" badge. **Sortable columns** — click any header to sort ascending/descending. Privacy mode hides share counts and dollar amounts. |
 | `#options` | **Options** — All option contracts with live option prices fetched from yfinance option chains, underlying price, and calculated contract value (opt price x shares in CAD). No P/L or notional columns — replaced by Opt Price and Contract Value. Includes a **delta exposure table** showing estimated delta, net delta, and notional delta (CAD) per contract. KPI summary includes total options holding value. Sortable columns. |
 | `#correlation` | **Correlation Matrix** — Pairwise return correlation heatmap. **Click any ticker** in the header or row labels to sort the matrix by correlation to that ticker. **Hover any cell** to see a tooltip showing the two tickers and their correlation value. |
 | `#risk` | **Risk Metrics** — KPI cards grouped into sections (Portfolio Overview, Risk-Adjusted Returns, Drawdown & Market Risk, Value at Risk, Distribution Shape, Option Hedging). Portfolio value shown in both CAD and USD. VaR ($) shown in both CAD and USD. Net Delta shown in both USD and CAD. **Hover any KPI card** for a plain-English explanation of the financial term. Individual position risk table with beta computed from SPY returns for tickers where yfinance does not provide it (ETFs, crypto). Sortable. |
@@ -515,7 +515,7 @@ The script produces a single `index.html` file (~160 KB) containing all analytic
 
 The script reads from `sample_portfolio.xlsx` in the workspace root, which must contain:
 
-- **Portfolio** sheet: Columns `Account, Symbol, Shares, Price, Currency, Mkt Value, Mkt Value (CAD)` (extra columns like historical returns are ignored)
+- **Portfolio** sheet: Columns `Account, Symbol, Shares, Price, Currency, Mkt Value, Mkt Value (CAD)` (Price and Mkt Value columns from the spreadsheet are overridden at runtime with live prices from yfinance; extra columns like historical returns are ignored)
 - **Options** sheet: Columns `Symbol, Account, Expirty, Type (CALL/PUT), Strike, Shares, Price, Currency, Cost` (P/L and N.Value columns are ignored; live option prices are fetched from yfinance)
 - **Currency** sheet: Row 1 must have the USD/CAD exchange rate in the `Price` column
 
@@ -533,6 +533,7 @@ Fundamentals (sector, industry, beta, type) are fetched live from yfinance for a
 - **Term Tooltips**: Hover any risk metric KPI card to see a plain-English (or Chinese) explanation of what the metric means (Sharpe Ratio, Sortino Ratio, Kurtosis, Calmar Ratio, VaR, CVaR, etc.).
 - **Option Hedging**: Stress testing and risk metrics incorporate option delta exposure to show hedged vs unhedged portfolio impacts.
 - **USD/CAD Toggle**: Stress testing scenario table has a toggle button to switch all dollar amounts between CAD and USD display.
+- **Live Stock Prices**: Position prices and market values are updated at build time with the latest closing price from yfinance. The spreadsheet Price/Mkt Value columns are used only as fallback when live data is unavailable.
 - **Live Option Prices**: Options page fetches current option premiums from yfinance option chains (mid of bid/ask, falls back to intrinsic value when chain unavailable).
 - **Computed Beta**: Individual position risk table computes beta from 1Y daily returns vs SPY for tickers where yfinance `.info` does not provide beta (ETFs, crypto ETFs, commodity ETFs).
 
