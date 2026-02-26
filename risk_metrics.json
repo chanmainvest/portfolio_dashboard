@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "Annualized Return": 0.660296,
   "Annualized Volatility": 0.266424,
   "Sharpe Ratio": 2.316968,
@@ -24,5 +25,32 @@
   "VaR 95% (USD)": 17829.47902,
   "VaR 99% (CAD)": 54403.980523,
   "VaR 99% (USD)": 39763.17828,
+=======
+  "Annualized Return": 0.639677,
+  "Annualized Volatility": 0.264701,
+  "Sharpe Ratio": 2.254156,
+  "Sortino Ratio": 2.629194,
+  "Maximum Drawdown": -0.166006,
+  "Beta to SPY": 0.592681,
+  "VaR 95%": -0.023564,
+  "VaR 99%": -0.05272,
+  "CVaR 95%": -0.042598,
+  "VaR 95% ($)": 23541.658257,
+  "VaR 99% ($)": 52669.588674,
+  "Skewness": -0.907621,
+  "Kurtosis": 3.729265,
+  "Calmar Ratio": 3.853334,
+  "Net Delta (USD)": -277013.497186,
+  "Option Delta Exposure": -379009.86685,
+  "Hedged VaR 95%": -0.014625,
+  "Hedged VaR 99%": -0.03272,
+  "Option Hedging Impact": -0.379375,
+  "Total Portfolio Value (CAD)": 999036.89462,
+  "Total Portfolio Value (USD)": 730183.375691,
+  "VaR 95% (CAD)": 23541.658257,
+  "VaR 95% (USD)": 17206.298974,
+  "VaR 99% (CAD)": 52669.588674,
+  "VaR 99% (USD)": 38495.53331,
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
   "Net Delta (CAD)": -379009.86685
 }

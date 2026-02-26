@@ -121,19 +121,32 @@
 </style>
 </head>
 <body>
+<<<<<<< HEAD
 <div class="nav"><a data-page="dashboard" onclick="showPage('dashboard')" data-i18n="nav_dashboard">Dashboard</a><a data-page="positions" onclick="showPage('positions')" data-i18n="nav_positions">Positions</a><a data-page="options" onclick="showPage('options')" data-i18n="nav_options">Options</a><a data-page="correlation" onclick="showPage('correlation')" data-i18n="nav_correlation">Correlation</a><a data-page="risk" onclick="showPage('risk')" data-i18n="nav_risk_metrics">Risk Metrics</a><a data-page="stress" onclick="showPage('stress')" data-i18n="nav_stress_testing">Stress Testing</a><a data-page="exposure" onclick="showPage('exposure')" data-i18n="nav_exposure">Exposure</a><span class="spacer"></span><span class="timestamp"><span data-i18n="generated">Generated:</span> 2026-02-25 21:54:15</span><button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button><button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button></div>
+=======
+<div class="nav"><a data-page="dashboard" onclick="showPage('dashboard')" data-i18n="nav_dashboard">Dashboard</a><a data-page="positions" onclick="showPage('positions')" data-i18n="nav_positions">Positions</a><a data-page="options" onclick="showPage('options')" data-i18n="nav_options">Options</a><a data-page="correlation" onclick="showPage('correlation')" data-i18n="nav_correlation">Correlation</a><a data-page="risk" onclick="showPage('risk')" data-i18n="nav_risk_metrics">Risk Metrics</a><a data-page="stress" onclick="showPage('stress')" data-i18n="nav_stress_testing">Stress Testing</a><a data-page="exposure" onclick="showPage('exposure')" data-i18n="nav_exposure">Exposure</a><span class="spacer"></span><span class="timestamp"><span data-i18n="generated">Generated:</span> 2026-02-26 05:49:30</span><button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button><button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button></div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 <div id="page-dashboard" class="page active">
 <div class="header">
     <h1 data-i18n="title_dashboard">Stock Portfolio Analytics Dashboard</h1>
     <p data-i18n="desc_dashboard">Comprehensive portfolio analysis with risk metrics, correlations, option hedging, and stress testing</p>
 </div>
 <div class="kpi-strip">
+<<<<<<< HEAD
     <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">$1,026,634</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">$750,354</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_ann_ret">Annualized Return</div><div class="value positive">66.03%</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_sharpe">Sharpe Ratio</div><div class="value">2.32</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_max_dd">Max Drawdown</div><div class="value negative">-16.57%</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_beta">Beta to SPY</div><div class="value">0.60</div></div>
+=======
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">$999,037</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">$730,183</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_ann_ret">Annualized Return</div><div class="value positive">63.97%</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_sharpe">Sharpe Ratio</div><div class="value">2.25</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_max_dd">Max Drawdown</div><div class="value negative">-16.60%</div></div>
+    <div class="kpi-mini"><div class="label" data-i18n="kpi_beta">Beta to SPY</div><div class="value">0.59</div></div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <div class="kpi-mini"><div class="label" data-i18n="kpi_pos_opt">Positions / Options</div><div class="value">19 / 16</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">$-379,010</div></div>
     <div class="kpi-mini"><div class="label" data-i18n="kpi_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">$-277,013</div></div>
@@ -1041,6 +1054,7 @@
 <th onclick="corrSortByCol('AAPL')">AAPL</th><th onclick="corrSortByCol('AMD')">AMD</th><th onclick="corrSortByCol('CCO')">CCO</th><th onclick="corrSortByCol('CVX')">CVX</th><th onclick="corrSortByCol('ETHA')">ETHA</th><th onclick="corrSortByCol('FCX')">FCX</th><th onclick="corrSortByCol('FNV')">FNV</th><th onclick="corrSortByCol('GBUG')">GBUG</th><th onclick="corrSortByCol('GOOG')">GOOG</th><th onclick="corrSortByCol('HL')">HL</th><th onclick="corrSortByCol('IBIT')">IBIT</th><th onclick="corrSortByCol('NVDA')">NVDA</th><th onclick="corrSortByCol('PAAS')">PAAS</th><th onclick="corrSortByCol('QQQ')">QQQ</th><th onclick="corrSortByCol('SLV')">SLV</th><th onclick="corrSortByCol('SPY')">SPY</th><th onclick="corrSortByCol('TLT')">TLT</th><th onclick="corrSortByCol('TRI')">TRI</th><th onclick="corrSortByCol('TSLA')">TSLA</th><th onclick="corrSortByCol('WPM')">WPM</th><th onclick="corrSortByCol('XIU')">XIU</th><th onclick="corrSortByCol('XOM')">XOM</th>
 </tr></thead>
 <tbody>
+<<<<<<< HEAD
 <tr><td class="row-header" onclick="corrSortByRow('AAPL')">AAPL</td><td data-r="AAPL" data-c="AAPL" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="AAPL" data-c="AMD" style="background:rgb(200,178,50);color:white;">0.40</td><td data-r="AAPL" data-c="CCO" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="AAPL" data-c="CVX" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="AAPL" data-c="ETHA" style="background:rgb(170,174,50);color:white;">0.32</td><td data-r="AAPL" data-c="FCX" style="background:rgb(203,172,50);color:white;">0.42</td><td data-r="AAPL" data-c="FNV" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="AAPL" data-c="GBUG" style="background:rgb(82,156,50);color:white;">0.09</td><td data-r="AAPL" data-c="GOOG" style="background:rgb(220,130,50);color:white;">0.51</td><td data-r="AAPL" data-c="HL" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="AAPL" data-c="IBIT" style="background:rgb(150,170,50);color:white;">0.27</td><td data-r="AAPL" data-c="NVDA" style="background:rgb(213,146,50);color:white;">0.48</td><td data-r="AAPL" data-c="PAAS" style="background:rgb(102,160,50);color:white;">0.14</td><td data-r="AAPL" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.73</td><td data-r="AAPL" data-c="SLV" style="background:rgb(89,157,50);color:white;">0.10</td><td data-r="AAPL" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="AAPL" data-c="TLT" style="background:rgb(75,155,50);color:white;">0.07</td><td data-r="AAPL" data-c="TRI" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="AAPL" data-c="TSLA" style="background:rgb(219,134,50);color:white;">0.51</td><td data-r="AAPL" data-c="WPM" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="AAPL" data-c="XIU" style="background:rgb(236,93,50);color:white;">0.60</td><td data-r="AAPL" data-c="XOM" style="background:rgb(188,177,50);color:white;">0.37</td></tr>
 <tr><td class="row-header" onclick="corrSortByRow('AMD')">AMD</td><td data-r="AMD" data-c="AAPL" style="background:rgb(200,178,50);color:white;">0.40</td><td data-r="AMD" data-c="AMD" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="AMD" data-c="CCO" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="AMD" data-c="CVX" style="background:rgb(149,169,50);color:white;">0.27</td><td data-r="AMD" data-c="ETHA" style="background:rgb(207,162,50);color:white;">0.44</td><td data-r="AMD" data-c="FCX" style="background:rgb(210,156,50);color:white;">0.46</td><td data-r="AMD" data-c="FNV" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="AMD" data-c="GBUG" style="background:rgb(136,167,50);color:white;">0.23</td><td data-r="AMD" data-c="GOOG" style="background:rgb(203,171,50);color:white;">0.42</td><td data-r="AMD" data-c="HL" style="background:rgb(156,171,50);color:white;">0.28</td><td data-r="AMD" data-c="IBIT" style="background:rgb(204,168,50);color:white;">0.43</td><td data-r="AMD" data-c="NVDA" style="background:rgb(241,82,50);color:white;">0.62</td><td data-r="AMD" data-c="PAAS" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="AMD" data-c="QQQ" style="background:rgb(251,58,50);color:white;">0.68</td><td data-r="AMD" data-c="SLV" style="background:rgb(121,164,50);color:white;">0.19</td><td data-r="AMD" data-c="SPY" style="background:rgb(241,82,50);color:white;">0.62</td><td data-r="AMD" data-c="TLT" style="background:rgb(50,151,102);color:white;">-0.01</td><td data-r="AMD" data-c="TRI" style="background:rgb(119,163,50);color:white;">0.19</td><td data-r="AMD" data-c="TSLA" style="background:rgb(214,146,50);color:white;">0.48</td><td data-r="AMD" data-c="WPM" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="AMD" data-c="XIU" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="AMD" data-c="XOM" style="background:rgb(130,166,50);color:white;">0.22</td></tr>
 <tr><td class="row-header" onclick="corrSortByRow('CCO')">CCO</td><td data-r="CCO" data-c="AAPL" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="CCO" data-c="AMD" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="CCO" data-c="CCO" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="CCO" data-c="CVX" style="background:rgb(113,162,50);color:white;">0.17</td><td data-r="CCO" data-c="ETHA" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="CCO" data-c="FCX" style="background:rgb(202,175,50);color:white;">0.41</td><td data-r="CCO" data-c="FNV" style="background:rgb(171,174,50);color:white;">0.33</td><td data-r="CCO" data-c="GBUG" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="CCO" data-c="GOOG" style="background:rgb(162,172,50);color:white;">0.30</td><td data-r="CCO" data-c="HL" style="background:rgb(155,171,50);color:white;">0.28</td><td data-r="CCO" data-c="IBIT" style="background:rgb(143,168,50);color:white;">0.25</td><td data-r="CCO" data-c="NVDA" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="CCO" data-c="PAAS" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="CCO" data-c="QQQ" style="background:rgb(208,161,50);color:white;">0.44</td><td data-r="CCO" data-c="SLV" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="CCO" data-c="SPY" style="background:rgb(201,175,50);color:white;">0.41</td><td data-r="CCO" data-c="TLT" style="background:rgb(62,152,50);color:white;">0.03</td><td data-r="CCO" data-c="TRI" style="background:rgb(65,153,50);color:white;">0.04</td><td data-r="CCO" data-c="TSLA" style="background:rgb(154,170,50);color:white;">0.28</td><td data-r="CCO" data-c="WPM" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="CCO" data-c="XIU" style="background:rgb(214,144,50);color:white;">0.48</td><td data-r="CCO" data-c="XOM" style="background:rgb(101,160,50);color:white;">0.14</td></tr>
@@ -1063,6 +1077,30 @@
 <tr><td class="row-header" onclick="corrSortByRow('WPM')">WPM</td><td data-r="WPM" data-c="AAPL" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="WPM" data-c="AMD" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="WPM" data-c="CCO" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="WPM" data-c="CVX" style="background:rgb(64,152,50);color:white;">0.04</td><td data-r="WPM" data-c="ETHA" style="background:rgb(70,154,50);color:white;">0.05</td><td data-r="WPM" data-c="FCX" style="background:rgb(184,176,50);color:white;">0.36</td><td data-r="WPM" data-c="FNV" style="background:rgb(200,50,50);color:white;">0.88</td><td data-r="WPM" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.87</td><td data-r="WPM" data-c="GOOG" style="background:rgb(68,153,50);color:white;">0.05</td><td data-r="WPM" data-c="HL" style="background:rgb(250,60,50);color:white;">0.68</td><td data-r="WPM" data-c="IBIT" style="background:rgb(93,158,50);color:white;">0.12</td><td data-r="WPM" data-c="NVDA" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="WPM" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.81</td><td data-r="WPM" data-c="QQQ" style="background:rgb(100,160,50);color:white;">0.13</td><td data-r="WPM" data-c="SLV" style="background:rgb(253,53,50);color:white;">0.69</td><td data-r="WPM" data-c="SPY" style="background:rgb(98,159,50);color:white;">0.13</td><td data-r="WPM" data-c="TLT" style="background:rgb(50,150,100);color:white;">-0.00</td><td data-r="WPM" data-c="TRI" style="background:rgb(104,160,50);color:white;">0.15</td><td data-r="WPM" data-c="TSLA" style="background:rgb(62,152,50);color:white;">0.03</td><td data-r="WPM" data-c="WPM" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="WPM" data-c="XIU" style="background:rgb(209,157,50);color:white;">0.45</td><td data-r="WPM" data-c="XOM" style="background:rgb(81,156,50);color:white;">0.08</td></tr>
 <tr><td class="row-header" onclick="corrSortByRow('XIU')">XIU</td><td data-r="XIU" data-c="AAPL" style="background:rgb(236,93,50);color:white;">0.60</td><td data-r="XIU" data-c="AMD" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="XIU" data-c="CCO" style="background:rgb(214,144,50);color:white;">0.48</td><td data-r="XIU" data-c="CVX" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="XIU" data-c="ETHA" style="background:rgb(197,179,50);color:white;">0.39</td><td data-r="XIU" data-c="FCX" style="background:rgb(234,97,50);color:white;">0.59</td><td data-r="XIU" data-c="FNV" style="background:rgb(215,143,50);color:white;">0.48</td><td data-r="XIU" data-c="GBUG" style="background:rgb(208,161,50);color:white;">0.44</td><td data-r="XIU" data-c="GOOG" style="background:rgb(208,160,50);color:white;">0.44</td><td data-r="XIU" data-c="HL" style="background:rgb(186,177,50);color:white;">0.36</td><td data-r="XIU" data-c="IBIT" style="background:rgb(198,179,50);color:white;">0.40</td><td data-r="XIU" data-c="NVDA" style="background:rgb(219,133,50);color:white;">0.51</td><td data-r="XIU" data-c="PAAS" style="background:rgb(208,160,50);color:white;">0.44</td><td data-r="XIU" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.75</td><td data-r="XIU" data-c="SLV" style="background:rgb(191,178,50);color:white;">0.38</td><td data-r="XIU" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.80</td><td data-r="XIU" data-c="TLT" style="background:rgb(97,159,50);color:white;">0.13</td><td data-r="XIU" data-c="TRI" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="XIU" data-c="TSLA" style="background:rgb(221,129,50);color:white;">0.52</td><td data-r="XIU" data-c="WPM" style="background:rgb(209,157,50);color:white;">0.45</td><td data-r="XIU" data-c="XIU" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="XIU" data-c="XOM" style="background:rgb(201,176,50);color:white;">0.41</td></tr>
 <tr><td class="row-header" onclick="corrSortByRow('XOM')">XOM</td><td data-r="XOM" data-c="AAPL" style="background:rgb(188,177,50);color:white;">0.37</td><td data-r="XOM" data-c="AMD" style="background:rgb(130,166,50);color:white;">0.22</td><td data-r="XOM" data-c="CCO" style="background:rgb(101,160,50);color:white;">0.14</td><td data-r="XOM" data-c="CVX" style="background:rgb(200,50,50);color:white;">0.86</td><td data-r="XOM" data-c="ETHA" style="background:rgb(112,162,50);color:white;">0.17</td><td data-r="XOM" data-c="FCX" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="XOM" data-c="FNV" style="background:rgb(91,158,50);color:white;">0.11</td><td data-r="XOM" data-c="GBUG" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="XOM" data-c="GOOG" style="background:rgb(93,158,50);color:white;">0.12</td><td data-r="XOM" data-c="HL" style="background:rgb(76,155,50);color:white;">0.07</td><td data-r="XOM" data-c="IBIT" style="background:rgb(99,159,50);color:white;">0.13</td><td data-r="XOM" data-c="NVDA" style="background:rgb(129,165,50);color:white;">0.21</td><td data-r="XOM" data-c="PAAS" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="XOM" data-c="QQQ" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="XOM" data-c="SLV" style="background:rgb(116,163,50);color:white;">0.18</td><td data-r="XOM" data-c="SPY" style="background:rgb(198,179,50);color:white;">0.40</td><td data-r="XOM" data-c="TLT" style="background:rgb(56,151,50);color:white;">0.02</td><td data-r="XOM" data-c="TRI" style="background:rgb(63,152,50);color:white;">0.03</td><td data-r="XOM" data-c="TSLA" style="background:rgb(124,164,50);color:white;">0.20</td><td data-r="XOM" data-c="WPM" style="background:rgb(81,156,50);color:white;">0.08</td><td data-r="XOM" data-c="XIU" style="background:rgb(201,176,50);color:white;">0.41</td><td data-r="XOM" data-c="XOM" style="background:#2A3F5F;color:#AABBCC;">1.00</td></tr>
+=======
+<tr><td class="row-header" onclick="corrSortByRow('AAPL')">AAPL</td><td data-r="AAPL" data-c="AAPL" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="AAPL" data-c="AMD" style="background:rgb(201,177,50);color:white;">0.41</td><td data-r="AAPL" data-c="CCO" style="background:rgb(116,163,50);color:white;">0.18</td><td data-r="AAPL" data-c="CVX" style="background:rgb(207,162,50);color:white;">0.44</td><td data-r="AAPL" data-c="ETHA" style="background:rgb(168,173,50);color:white;">0.32</td><td data-r="AAPL" data-c="FCX" style="background:rgb(204,169,50);color:white;">0.43</td><td data-r="AAPL" data-c="FNV" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="AAPL" data-c="GBUG" style="background:rgb(84,156,50);color:white;">0.09</td><td data-r="AAPL" data-c="GOOG" style="background:rgb(220,131,50);color:white;">0.51</td><td data-r="AAPL" data-c="HL" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="AAPL" data-c="IBIT" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="AAPL" data-c="NVDA" style="background:rgb(215,142,50);color:white;">0.49</td><td data-r="AAPL" data-c="PAAS" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="AAPL" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.73</td><td data-r="AAPL" data-c="SLV" style="background:rgb(89,157,50);color:white;">0.11</td><td data-r="AAPL" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="AAPL" data-c="TLT" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="AAPL" data-c="TRI" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="AAPL" data-c="TSLA" style="background:rgb(218,135,50);color:white;">0.50</td><td data-r="AAPL" data-c="WPM" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="AAPL" data-c="XIU" style="background:rgb(237,92,50);color:white;">0.60</td><td data-r="AAPL" data-c="XOM" style="background:rgb(188,177,50);color:white;">0.37</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('AMD')">AMD</td><td data-r="AMD" data-c="AAPL" style="background:rgb(201,177,50);color:white;">0.41</td><td data-r="AMD" data-c="AMD" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="AMD" data-c="CCO" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="AMD" data-c="CVX" style="background:rgb(149,169,50);color:white;">0.27</td><td data-r="AMD" data-c="ETHA" style="background:rgb(205,165,50);color:white;">0.43</td><td data-r="AMD" data-c="FCX" style="background:rgb(210,156,50);color:white;">0.45</td><td data-r="AMD" data-c="FNV" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="AMD" data-c="GBUG" style="background:rgb(136,167,50);color:white;">0.23</td><td data-r="AMD" data-c="GOOG" style="background:rgb(203,170,50);color:white;">0.42</td><td data-r="AMD" data-c="HL" style="background:rgb(156,171,50);color:white;">0.28</td><td data-r="AMD" data-c="IBIT" style="background:rgb(203,171,50);color:white;">0.42</td><td data-r="AMD" data-c="NVDA" style="background:rgb(241,82,50);color:white;">0.62</td><td data-r="AMD" data-c="PAAS" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="AMD" data-c="QQQ" style="background:rgb(250,59,50);color:white;">0.68</td><td data-r="AMD" data-c="SLV" style="background:rgb(121,164,50);color:white;">0.19</td><td data-r="AMD" data-c="SPY" style="background:rgb(240,83,50);color:white;">0.62</td><td data-r="AMD" data-c="TLT" style="background:rgb(50,151,102);color:white;">-0.01</td><td data-r="AMD" data-c="TRI" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="AMD" data-c="TSLA" style="background:rgb(214,146,50);color:white;">0.48</td><td data-r="AMD" data-c="WPM" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="AMD" data-c="XIU" style="background:rgb(210,155,50);color:white;">0.46</td><td data-r="AMD" data-c="XOM" style="background:rgb(131,166,50);color:white;">0.22</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('CCO')">CCO</td><td data-r="CCO" data-c="AAPL" style="background:rgb(116,163,50);color:white;">0.18</td><td data-r="CCO" data-c="AMD" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="CCO" data-c="CCO" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="CCO" data-c="CVX" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="CCO" data-c="ETHA" style="background:rgb(140,168,50);color:white;">0.24</td><td data-r="CCO" data-c="FCX" style="background:rgb(201,176,50);color:white;">0.41</td><td data-r="CCO" data-c="FNV" style="background:rgb(171,174,50);color:white;">0.32</td><td data-r="CCO" data-c="GBUG" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="CCO" data-c="GOOG" style="background:rgb(163,172,50);color:white;">0.30</td><td data-r="CCO" data-c="HL" style="background:rgb(155,171,50);color:white;">0.28</td><td data-r="CCO" data-c="IBIT" style="background:rgb(142,168,50);color:white;">0.25</td><td data-r="CCO" data-c="NVDA" style="background:rgb(207,163,50);color:white;">0.44</td><td data-r="CCO" data-c="PAAS" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="CCO" data-c="QQQ" style="background:rgb(207,162,50);color:white;">0.44</td><td data-r="CCO" data-c="SLV" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="CCO" data-c="SPY" style="background:rgb(201,176,50);color:white;">0.41</td><td data-r="CCO" data-c="TLT" style="background:rgb(61,152,50);color:white;">0.03</td><td data-r="CCO" data-c="TRI" style="background:rgb(62,152,50);color:white;">0.03</td><td data-r="CCO" data-c="TSLA" style="background:rgb(156,171,50);color:white;">0.28</td><td data-r="CCO" data-c="WPM" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="CCO" data-c="XIU" style="background:rgb(214,146,50);color:white;">0.48</td><td data-r="CCO" data-c="XOM" style="background:rgb(102,160,50);color:white;">0.14</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('CVX')">CVX</td><td data-r="CVX" data-c="AAPL" style="background:rgb(207,162,50);color:white;">0.44</td><td data-r="CVX" data-c="AMD" style="background:rgb(149,169,50);color:white;">0.27</td><td data-r="CVX" data-c="CCO" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="CVX" data-c="CVX" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="CVX" data-c="ETHA" style="background:rgb(136,167,50);color:white;">0.23</td><td data-r="CVX" data-c="FCX" style="background:rgb(188,177,50);color:white;">0.37</td><td data-r="CVX" data-c="FNV" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="CVX" data-c="GBUG" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="CVX" data-c="GOOG" style="background:rgb(121,164,50);color:white;">0.19</td><td data-r="CVX" data-c="HL" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="CVX" data-c="IBIT" style="background:rgb(113,162,50);color:white;">0.17</td><td data-r="CVX" data-c="NVDA" style="background:rgb(162,172,50);color:white;">0.30</td><td data-r="CVX" data-c="PAAS" style="background:rgb(105,161,50);color:white;">0.15</td><td data-r="CVX" data-c="QQQ" style="background:rgb(201,177,50);color:white;">0.41</td><td data-r="CVX" data-c="SLV" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="CVX" data-c="SPY" style="background:rgb(219,133,50);color:white;">0.51</td><td data-r="CVX" data-c="TLT" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="CVX" data-c="TRI" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="CVX" data-c="TSLA" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="CVX" data-c="WPM" style="background:rgb(65,153,50);color:white;">0.04</td><td data-r="CVX" data-c="XIU" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="CVX" data-c="XOM" style="background:rgb(200,50,50);color:white;">0.86</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('ETHA')">ETHA</td><td data-r="ETHA" data-c="AAPL" style="background:rgb(168,173,50);color:white;">0.32</td><td data-r="ETHA" data-c="AMD" style="background:rgb(205,165,50);color:white;">0.43</td><td data-r="ETHA" data-c="CCO" style="background:rgb(140,168,50);color:white;">0.24</td><td data-r="ETHA" data-c="CVX" style="background:rgb(136,167,50);color:white;">0.23</td><td data-r="ETHA" data-c="ETHA" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="ETHA" data-c="FCX" style="background:rgb(173,174,50);color:white;">0.33</td><td data-r="ETHA" data-c="FNV" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="ETHA" data-c="GBUG" style="background:rgb(119,163,50);color:white;">0.19</td><td data-r="ETHA" data-c="GOOG" style="background:rgb(187,177,50);color:white;">0.37</td><td data-r="ETHA" data-c="HL" style="background:rgb(122,164,50);color:white;">0.19</td><td data-r="ETHA" data-c="IBIT" style="background:rgb(200,50,50);color:white;">0.85</td><td data-r="ETHA" data-c="NVDA" style="background:rgb(194,178,50);color:white;">0.39</td><td data-r="ETHA" data-c="PAAS" style="background:rgb(124,164,50);color:white;">0.20</td><td data-r="ETHA" data-c="QQQ" style="background:rgb(220,132,50);color:white;">0.51</td><td data-r="ETHA" data-c="SLV" style="background:rgb(125,165,50);color:white;">0.20</td><td data-r="ETHA" data-c="SPY" style="background:rgb(213,148,50);color:white;">0.47</td><td data-r="ETHA" data-c="TLT" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="ETHA" data-c="TRI" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="ETHA" data-c="TSLA" style="background:rgb(213,148,50);color:white;">0.47</td><td data-r="ETHA" data-c="WPM" style="background:rgb(70,154,50);color:white;">0.06</td><td data-r="ETHA" data-c="XIU" style="background:rgb(198,179,50);color:white;">0.40</td><td data-r="ETHA" data-c="XOM" style="background:rgb(110,162,50);color:white;">0.16</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('FCX')">FCX</td><td data-r="FCX" data-c="AAPL" style="background:rgb(204,169,50);color:white;">0.43</td><td data-r="FCX" data-c="AMD" style="background:rgb(210,156,50);color:white;">0.45</td><td data-r="FCX" data-c="CCO" style="background:rgb(201,176,50);color:white;">0.41</td><td data-r="FCX" data-c="CVX" style="background:rgb(188,177,50);color:white;">0.37</td><td data-r="FCX" data-c="ETHA" style="background:rgb(173,174,50);color:white;">0.33</td><td data-r="FCX" data-c="FCX" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="FCX" data-c="FNV" style="background:rgb(181,176,50);color:white;">0.35</td><td data-r="FCX" data-c="GBUG" style="background:rgb(215,144,50);color:white;">0.48</td><td data-r="FCX" data-c="GOOG" style="background:rgb(200,178,50);color:white;">0.40</td><td data-r="FCX" data-c="HL" style="background:rgb(204,168,50);color:white;">0.43</td><td data-r="FCX" data-c="IBIT" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="FCX" data-c="NVDA" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="FCX" data-c="PAAS" style="background:rgb(217,138,50);color:white;">0.49</td><td data-r="FCX" data-c="QQQ" style="background:rgb(238,90,50);color:white;">0.61</td><td data-r="FCX" data-c="SLV" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="FCX" data-c="SPY" style="background:rgb(239,87,50);color:white;">0.61</td><td data-r="FCX" data-c="TLT" style="background:rgb(53,150,50);color:white;">0.01</td><td data-r="FCX" data-c="TRI" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="FCX" data-c="TSLA" style="background:rgb(192,178,50);color:white;">0.38</td><td data-r="FCX" data-c="WPM" style="background:rgb(183,176,50);color:white;">0.36</td><td data-r="FCX" data-c="XIU" style="background:rgb(234,98,50);color:white;">0.59</td><td data-r="FCX" data-c="XOM" style="background:rgb(169,173,50);color:white;">0.32</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('FNV')">FNV</td><td data-r="FNV" data-c="AAPL" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="FNV" data-c="AMD" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="FNV" data-c="CCO" style="background:rgb(171,174,50);color:white;">0.32</td><td data-r="FNV" data-c="CVX" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="FNV" data-c="ETHA" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="FNV" data-c="FCX" style="background:rgb(181,176,50);color:white;">0.35</td><td data-r="FNV" data-c="FNV" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="FNV" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.81</td><td data-r="FNV" data-c="GOOG" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="FNV" data-c="HL" style="background:rgb(239,86,50);color:white;">0.62</td><td data-r="FNV" data-c="IBIT" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="FNV" data-c="NVDA" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="FNV" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.71</td><td data-r="FNV" data-c="QQQ" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="FNV" data-c="SLV" style="background:rgb(237,90,50);color:white;">0.61</td><td data-r="FNV" data-c="SPY" style="background:rgb(112,162,50);color:white;">0.17</td><td data-r="FNV" data-c="TLT" style="background:rgb(50,151,102);color:white;">-0.01</td><td data-r="FNV" data-c="TRI" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="FNV" data-c="TSLA" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="FNV" data-c="WPM" style="background:rgb(200,50,50);color:white;">0.88</td><td data-r="FNV" data-c="XIU" style="background:rgb(215,144,50);color:white;">0.48</td><td data-r="FNV" data-c="XOM" style="background:rgb(91,158,50);color:white;">0.11</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('GBUG')">GBUG</td><td data-r="GBUG" data-c="AAPL" style="background:rgb(84,156,50);color:white;">0.09</td><td data-r="GBUG" data-c="AMD" style="background:rgb(136,167,50);color:white;">0.23</td><td data-r="GBUG" data-c="CCO" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="GBUG" data-c="CVX" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="GBUG" data-c="ETHA" style="background:rgb(119,163,50);color:white;">0.19</td><td data-r="GBUG" data-c="FCX" style="background:rgb(215,144,50);color:white;">0.48</td><td data-r="GBUG" data-c="FNV" style="background:rgb(200,50,50);color:white;">0.81</td><td data-r="GBUG" data-c="GBUG" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="GBUG" data-c="GOOG" style="background:rgb(101,160,50);color:white;">0.14</td><td data-r="GBUG" data-c="HL" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="GBUG" data-c="IBIT" style="background:rgb(140,168,50);color:white;">0.24</td><td data-r="GBUG" data-c="NVDA" style="background:rgb(104,160,50);color:white;">0.14</td><td data-r="GBUG" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.88</td><td data-r="GBUG" data-c="QQQ" style="background:rgb(138,167,50);color:white;">0.24</td><td data-r="GBUG" data-c="SLV" style="background:rgb(200,50,50);color:white;">0.72</td><td data-r="GBUG" data-c="SPY" style="background:rgb(127,165,50);color:white;">0.21</td><td data-r="GBUG" data-c="TLT" style="background:rgb(50,155,111);color:white;">-0.05</td><td data-r="GBUG" data-c="TRI" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="GBUG" data-c="TSLA" style="background:rgb(108,161,50);color:white;">0.15</td><td data-r="GBUG" data-c="WPM" style="background:rgb(200,50,50);color:white;">0.87</td><td data-r="GBUG" data-c="XIU" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="GBUG" data-c="XOM" style="background:rgb(72,154,50);color:white;">0.06</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('GOOG')">GOOG</td><td data-r="GOOG" data-c="AAPL" style="background:rgb(220,131,50);color:white;">0.51</td><td data-r="GOOG" data-c="AMD" style="background:rgb(203,170,50);color:white;">0.42</td><td data-r="GOOG" data-c="CCO" style="background:rgb(163,172,50);color:white;">0.30</td><td data-r="GOOG" data-c="CVX" style="background:rgb(121,164,50);color:white;">0.19</td><td data-r="GOOG" data-c="ETHA" style="background:rgb(187,177,50);color:white;">0.37</td><td data-r="GOOG" data-c="FCX" style="background:rgb(200,178,50);color:white;">0.40</td><td data-r="GOOG" data-c="FNV" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="GOOG" data-c="GBUG" style="background:rgb(101,160,50);color:white;">0.14</td><td data-r="GOOG" data-c="GOOG" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="GOOG" data-c="HL" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="GOOG" data-c="IBIT" style="background:rgb(158,171,50);color:white;">0.29</td><td data-r="GOOG" data-c="NVDA" style="background:rgb(216,142,50);color:white;">0.49</td><td data-r="GOOG" data-c="PAAS" style="background:rgb(111,162,50);color:white;">0.16</td><td data-r="GOOG" data-c="QQQ" style="background:rgb(247,68,50);color:white;">0.66</td><td data-r="GOOG" data-c="SLV" style="background:rgb(89,157,50);color:white;">0.10</td><td data-r="GOOG" data-c="SPY" style="background:rgb(239,85,50);color:white;">0.62</td><td data-r="GOOG" data-c="TLT" style="background:rgb(57,151,50);color:white;">0.02</td><td data-r="GOOG" data-c="TRI" style="background:rgb(76,155,50);color:white;">0.07</td><td data-r="GOOG" data-c="TSLA" style="background:rgb(219,134,50);color:white;">0.51</td><td data-r="GOOG" data-c="WPM" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="GOOG" data-c="XIU" style="background:rgb(208,159,50);color:white;">0.45</td><td data-r="GOOG" data-c="XOM" style="background:rgb(92,158,50);color:white;">0.11</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('HL')">HL</td><td data-r="HL" data-c="AAPL" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="HL" data-c="AMD" style="background:rgb(156,171,50);color:white;">0.28</td><td data-r="HL" data-c="CCO" style="background:rgb(155,171,50);color:white;">0.28</td><td data-r="HL" data-c="CVX" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="HL" data-c="ETHA" style="background:rgb(122,164,50);color:white;">0.19</td><td data-r="HL" data-c="FCX" style="background:rgb(204,168,50);color:white;">0.43</td><td data-r="HL" data-c="FNV" style="background:rgb(239,86,50);color:white;">0.62</td><td data-r="HL" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="HL" data-c="GOOG" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="HL" data-c="HL" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="HL" data-c="IBIT" style="background:rgb(129,165,50);color:white;">0.21</td><td data-r="HL" data-c="NVDA" style="background:rgb(118,163,50);color:white;">0.18</td><td data-r="HL" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.77</td><td data-r="HL" data-c="QQQ" style="background:rgb(150,170,50);color:white;">0.27</td><td data-r="HL" data-c="SLV" style="background:rgb(238,89,50);color:white;">0.61</td><td data-r="HL" data-c="SPY" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="HL" data-c="TLT" style="background:rgb(50,150,50);color:white;">0.00</td><td data-r="HL" data-c="TRI" style="background:rgb(73,154,50);color:white;">0.06</td><td data-r="HL" data-c="TSLA" style="background:rgb(105,161,50);color:white;">0.15</td><td data-r="HL" data-c="WPM" style="background:rgb(250,60,50);color:white;">0.68</td><td data-r="HL" data-c="XIU" style="background:rgb(186,177,50);color:white;">0.36</td><td data-r="HL" data-c="XOM" style="background:rgb(76,155,50);color:white;">0.07</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('IBIT')">IBIT</td><td data-r="IBIT" data-c="AAPL" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="IBIT" data-c="AMD" style="background:rgb(203,171,50);color:white;">0.42</td><td data-r="IBIT" data-c="CCO" style="background:rgb(142,168,50);color:white;">0.25</td><td data-r="IBIT" data-c="CVX" style="background:rgb(113,162,50);color:white;">0.17</td><td data-r="IBIT" data-c="ETHA" style="background:rgb(200,50,50);color:white;">0.85</td><td data-r="IBIT" data-c="FCX" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="IBIT" data-c="FNV" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="IBIT" data-c="GBUG" style="background:rgb(140,168,50);color:white;">0.24</td><td data-r="IBIT" data-c="GOOG" style="background:rgb(158,171,50);color:white;">0.29</td><td data-r="IBIT" data-c="HL" style="background:rgb(129,165,50);color:white;">0.21</td><td data-r="IBIT" data-c="IBIT" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="IBIT" data-c="NVDA" style="background:rgb(182,176,50);color:white;">0.35</td><td data-r="IBIT" data-c="PAAS" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="IBIT" data-c="QQQ" style="background:rgb(213,147,50);color:white;">0.48</td><td data-r="IBIT" data-c="SLV" style="background:rgb(133,166,50);color:white;">0.22</td><td data-r="IBIT" data-c="SPY" style="background:rgb(206,164,50);color:white;">0.44</td><td data-r="IBIT" data-c="TLT" style="background:rgb(54,150,50);color:white;">0.01</td><td data-r="IBIT" data-c="TRI" style="background:rgb(112,162,50);color:white;">0.17</td><td data-r="IBIT" data-c="TSLA" style="background:rgb(210,154,50);color:white;">0.46</td><td data-r="IBIT" data-c="WPM" style="background:rgb(94,158,50);color:white;">0.12</td><td data-r="IBIT" data-c="XIU" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="IBIT" data-c="XOM" style="background:rgb(97,159,50);color:white;">0.13</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('NVDA')">NVDA</td><td data-r="NVDA" data-c="AAPL" style="background:rgb(215,142,50);color:white;">0.49</td><td data-r="NVDA" data-c="AMD" style="background:rgb(241,82,50);color:white;">0.62</td><td data-r="NVDA" data-c="CCO" style="background:rgb(207,163,50);color:white;">0.44</td><td data-r="NVDA" data-c="CVX" style="background:rgb(162,172,50);color:white;">0.30</td><td data-r="NVDA" data-c="ETHA" style="background:rgb(194,178,50);color:white;">0.39</td><td data-r="NVDA" data-c="FCX" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="NVDA" data-c="FNV" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="NVDA" data-c="GBUG" style="background:rgb(104,160,50);color:white;">0.14</td><td data-r="NVDA" data-c="GOOG" style="background:rgb(216,142,50);color:white;">0.49</td><td data-r="NVDA" data-c="HL" style="background:rgb(118,163,50);color:white;">0.18</td><td data-r="NVDA" data-c="IBIT" style="background:rgb(182,176,50);color:white;">0.35</td><td data-r="NVDA" data-c="NVDA" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="NVDA" data-c="PAAS" style="background:rgb(123,164,50);color:white;">0.20</td><td data-r="NVDA" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.82</td><td data-r="NVDA" data-c="SLV" style="background:rgb(99,159,50);color:white;">0.13</td><td data-r="NVDA" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="NVDA" data-c="TLT" style="background:rgb(50,153,106);color:white;">-0.02</td><td data-r="NVDA" data-c="TRI" style="background:rgb(90,158,50);color:white;">0.11</td><td data-r="NVDA" data-c="TSLA" style="background:rgb(231,104,50);color:white;">0.57</td><td data-r="NVDA" data-c="WPM" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="NVDA" data-c="XIU" style="background:rgb(219,133,50);color:white;">0.51</td><td data-r="NVDA" data-c="XOM" style="background:rgb(129,165,50);color:white;">0.21</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('PAAS')">PAAS</td><td data-r="PAAS" data-c="AAPL" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="PAAS" data-c="AMD" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="PAAS" data-c="CCO" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="PAAS" data-c="CVX" style="background:rgb(105,161,50);color:white;">0.15</td><td data-r="PAAS" data-c="ETHA" style="background:rgb(124,164,50);color:white;">0.20</td><td data-r="PAAS" data-c="FCX" style="background:rgb(217,138,50);color:white;">0.49</td><td data-r="PAAS" data-c="FNV" style="background:rgb(200,50,50);color:white;">0.71</td><td data-r="PAAS" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.88</td><td data-r="PAAS" data-c="GOOG" style="background:rgb(111,162,50);color:white;">0.16</td><td data-r="PAAS" data-c="HL" style="background:rgb(200,50,50);color:white;">0.77</td><td data-r="PAAS" data-c="IBIT" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="PAAS" data-c="NVDA" style="background:rgb(123,164,50);color:white;">0.20</td><td data-r="PAAS" data-c="PAAS" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="PAAS" data-c="QQQ" style="background:rgb(155,171,50);color:white;">0.28</td><td data-r="PAAS" data-c="SLV" style="background:rgb(200,50,50);color:white;">0.70</td><td data-r="PAAS" data-c="SPY" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="PAAS" data-c="TLT" style="background:rgb(50,155,111);color:white;">-0.05</td><td data-r="PAAS" data-c="TRI" style="background:rgb(85,157,50);color:white;">0.09</td><td data-r="PAAS" data-c="TSLA" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="PAAS" data-c="WPM" style="background:rgb(200,50,50);color:white;">0.81</td><td data-r="PAAS" data-c="XIU" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="PAAS" data-c="XOM" style="background:rgb(108,161,50);color:white;">0.16</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('QQQ')">QQQ</td><td data-r="QQQ" data-c="AAPL" style="background:rgb(200,50,50);color:white;">0.73</td><td data-r="QQQ" data-c="AMD" style="background:rgb(250,59,50);color:white;">0.68</td><td data-r="QQQ" data-c="CCO" style="background:rgb(207,162,50);color:white;">0.44</td><td data-r="QQQ" data-c="CVX" style="background:rgb(201,177,50);color:white;">0.41</td><td data-r="QQQ" data-c="ETHA" style="background:rgb(220,132,50);color:white;">0.51</td><td data-r="QQQ" data-c="FCX" style="background:rgb(238,90,50);color:white;">0.61</td><td data-r="QQQ" data-c="FNV" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="QQQ" data-c="GBUG" style="background:rgb(138,167,50);color:white;">0.24</td><td data-r="QQQ" data-c="GOOG" style="background:rgb(247,68,50);color:white;">0.66</td><td data-r="QQQ" data-c="HL" style="background:rgb(150,170,50);color:white;">0.27</td><td data-r="QQQ" data-c="IBIT" style="background:rgb(213,147,50);color:white;">0.48</td><td data-r="QQQ" data-c="NVDA" style="background:rgb(200,50,50);color:white;">0.82</td><td data-r="QQQ" data-c="PAAS" style="background:rgb(155,171,50);color:white;">0.28</td><td data-r="QQQ" data-c="QQQ" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="QQQ" data-c="SLV" style="background:rgb(123,164,50);color:white;">0.20</td><td data-r="QQQ" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.97</td><td data-r="QQQ" data-c="TLT" style="background:rgb(64,152,50);color:white;">0.04</td><td data-r="QQQ" data-c="TRI" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="QQQ" data-c="TSLA" style="background:rgb(200,50,50);color:white;">0.71</td><td data-r="QQQ" data-c="WPM" style="background:rgb(99,159,50);color:white;">0.13</td><td data-r="QQQ" data-c="XIU" style="background:rgb(200,50,50);color:white;">0.75</td><td data-r="QQQ" data-c="XOM" style="background:rgb(161,172,50);color:white;">0.30</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('SLV')">SLV</td><td data-r="SLV" data-c="AAPL" style="background:rgb(89,157,50);color:white;">0.11</td><td data-r="SLV" data-c="AMD" style="background:rgb(121,164,50);color:white;">0.19</td><td data-r="SLV" data-c="CCO" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="SLV" data-c="CVX" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="SLV" data-c="ETHA" style="background:rgb(125,165,50);color:white;">0.20</td><td data-r="SLV" data-c="FCX" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="SLV" data-c="FNV" style="background:rgb(237,90,50);color:white;">0.61</td><td data-r="SLV" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.72</td><td data-r="SLV" data-c="GOOG" style="background:rgb(89,157,50);color:white;">0.10</td><td data-r="SLV" data-c="HL" style="background:rgb(238,89,50);color:white;">0.61</td><td data-r="SLV" data-c="IBIT" style="background:rgb(133,166,50);color:white;">0.22</td><td data-r="SLV" data-c="NVDA" style="background:rgb(99,159,50);color:white;">0.13</td><td data-r="SLV" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.70</td><td data-r="SLV" data-c="QQQ" style="background:rgb(123,164,50);color:white;">0.20</td><td data-r="SLV" data-c="SLV" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="SLV" data-c="SPY" style="background:rgb(115,163,50);color:white;">0.17</td><td data-r="SLV" data-c="TLT" style="background:rgb(50,158,116);color:white;">-0.07</td><td data-r="SLV" data-c="TRI" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="SLV" data-c="TSLA" style="background:rgb(65,153,50);color:white;">0.04</td><td data-r="SLV" data-c="WPM" style="background:rgb(253,53,50);color:white;">0.69</td><td data-r="SLV" data-c="XIU" style="background:rgb(192,178,50);color:white;">0.38</td><td data-r="SLV" data-c="XOM" style="background:rgb(116,163,50);color:white;">0.18</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('SPY')">SPY</td><td data-r="SPY" data-c="AAPL" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="SPY" data-c="AMD" style="background:rgb(240,83,50);color:white;">0.62</td><td data-r="SPY" data-c="CCO" style="background:rgb(201,176,50);color:white;">0.41</td><td data-r="SPY" data-c="CVX" style="background:rgb(219,133,50);color:white;">0.51</td><td data-r="SPY" data-c="ETHA" style="background:rgb(213,148,50);color:white;">0.47</td><td data-r="SPY" data-c="FCX" style="background:rgb(239,87,50);color:white;">0.61</td><td data-r="SPY" data-c="FNV" style="background:rgb(112,162,50);color:white;">0.17</td><td data-r="SPY" data-c="GBUG" style="background:rgb(127,165,50);color:white;">0.21</td><td data-r="SPY" data-c="GOOG" style="background:rgb(239,85,50);color:white;">0.62</td><td data-r="SPY" data-c="HL" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="SPY" data-c="IBIT" style="background:rgb(206,164,50);color:white;">0.44</td><td data-r="SPY" data-c="NVDA" style="background:rgb(200,50,50);color:white;">0.76</td><td data-r="SPY" data-c="PAAS" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="SPY" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.97</td><td data-r="SPY" data-c="SLV" style="background:rgb(115,163,50);color:white;">0.17</td><td data-r="SPY" data-c="SPY" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="SPY" data-c="TLT" style="background:rgb(83,156,50);color:white;">0.09</td><td data-r="SPY" data-c="TRI" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="SPY" data-c="TSLA" style="background:rgb(251,57,50);color:white;">0.68</td><td data-r="SPY" data-c="WPM" style="background:rgb(98,159,50);color:white;">0.13</td><td data-r="SPY" data-c="XIU" style="background:rgb(200,50,50);color:white;">0.80</td><td data-r="SPY" data-c="XOM" style="background:rgb(198,179,50);color:white;">0.40</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('TLT')">TLT</td><td data-r="TLT" data-c="AAPL" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="TLT" data-c="AMD" style="background:rgb(50,151,102);color:white;">-0.01</td><td data-r="TLT" data-c="CCO" style="background:rgb(61,152,50);color:white;">0.03</td><td data-r="TLT" data-c="CVX" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="TLT" data-c="ETHA" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="TLT" data-c="FCX" style="background:rgb(53,150,50);color:white;">0.01</td><td data-r="TLT" data-c="FNV" style="background:rgb(50,151,102);color:white;">-0.01</td><td data-r="TLT" data-c="GBUG" style="background:rgb(50,155,111);color:white;">-0.05</td><td data-r="TLT" data-c="GOOG" style="background:rgb(57,151,50);color:white;">0.02</td><td data-r="TLT" data-c="HL" style="background:rgb(50,150,50);color:white;">0.00</td><td data-r="TLT" data-c="IBIT" style="background:rgb(54,150,50);color:white;">0.01</td><td data-r="TLT" data-c="NVDA" style="background:rgb(50,153,106);color:white;">-0.02</td><td data-r="TLT" data-c="PAAS" style="background:rgb(50,155,111);color:white;">-0.05</td><td data-r="TLT" data-c="QQQ" style="background:rgb(64,152,50);color:white;">0.04</td><td data-r="TLT" data-c="SLV" style="background:rgb(50,158,116);color:white;">-0.07</td><td data-r="TLT" data-c="SPY" style="background:rgb(83,156,50);color:white;">0.09</td><td data-r="TLT" data-c="TLT" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="TLT" data-c="TRI" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="TLT" data-c="TSLA" style="background:rgb(59,151,50);color:white;">0.03</td><td data-r="TLT" data-c="WPM" style="background:rgb(50,150,101);color:white;">-0.01</td><td data-r="TLT" data-c="XIU" style="background:rgb(96,159,50);color:white;">0.12</td><td data-r="TLT" data-c="XOM" style="background:rgb(57,151,50);color:white;">0.02</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('TRI')">TRI</td><td data-r="TRI" data-c="AAPL" style="background:rgb(107,161,50);color:white;">0.15</td><td data-r="TRI" data-c="AMD" style="background:rgb(114,162,50);color:white;">0.17</td><td data-r="TRI" data-c="CCO" style="background:rgb(62,152,50);color:white;">0.03</td><td data-r="TRI" data-c="CVX" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="TRI" data-c="ETHA" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="TRI" data-c="FCX" style="background:rgb(78,155,50);color:white;">0.08</td><td data-r="TRI" data-c="FNV" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="TRI" data-c="GBUG" style="background:rgb(80,156,50);color:white;">0.08</td><td data-r="TRI" data-c="GOOG" style="background:rgb(76,155,50);color:white;">0.07</td><td data-r="TRI" data-c="HL" style="background:rgb(73,154,50);color:white;">0.06</td><td data-r="TRI" data-c="IBIT" style="background:rgb(112,162,50);color:white;">0.17</td><td data-r="TRI" data-c="NVDA" style="background:rgb(90,158,50);color:white;">0.11</td><td data-r="TRI" data-c="PAAS" style="background:rgb(85,157,50);color:white;">0.09</td><td data-r="TRI" data-c="QQQ" style="background:rgb(141,168,50);color:white;">0.24</td><td data-r="TRI" data-c="SLV" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="TRI" data-c="SPY" style="background:rgb(148,169,50);color:white;">0.26</td><td data-r="TRI" data-c="TLT" style="background:rgb(77,155,50);color:white;">0.07</td><td data-r="TRI" data-c="TRI" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="TRI" data-c="TSLA" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="TRI" data-c="WPM" style="background:rgb(101,160,50);color:white;">0.14</td><td data-r="TRI" data-c="XIU" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="TRI" data-c="XOM" style="background:rgb(61,152,50);color:white;">0.03</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('TSLA')">TSLA</td><td data-r="TSLA" data-c="AAPL" style="background:rgb(218,135,50);color:white;">0.50</td><td data-r="TSLA" data-c="AMD" style="background:rgb(214,146,50);color:white;">0.48</td><td data-r="TSLA" data-c="CCO" style="background:rgb(156,171,50);color:white;">0.28</td><td data-r="TSLA" data-c="CVX" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="TSLA" data-c="ETHA" style="background:rgb(213,148,50);color:white;">0.47</td><td data-r="TSLA" data-c="FCX" style="background:rgb(192,178,50);color:white;">0.38</td><td data-r="TSLA" data-c="FNV" style="background:rgb(86,157,50);color:white;">0.10</td><td data-r="TSLA" data-c="GBUG" style="background:rgb(108,161,50);color:white;">0.15</td><td data-r="TSLA" data-c="GOOG" style="background:rgb(219,134,50);color:white;">0.51</td><td data-r="TSLA" data-c="HL" style="background:rgb(105,161,50);color:white;">0.15</td><td data-r="TSLA" data-c="IBIT" style="background:rgb(210,154,50);color:white;">0.46</td><td data-r="TSLA" data-c="NVDA" style="background:rgb(231,104,50);color:white;">0.57</td><td data-r="TSLA" data-c="PAAS" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="TSLA" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.71</td><td data-r="TSLA" data-c="SLV" style="background:rgb(65,153,50);color:white;">0.04</td><td data-r="TSLA" data-c="SPY" style="background:rgb(251,57,50);color:white;">0.68</td><td data-r="TSLA" data-c="TLT" style="background:rgb(59,151,50);color:white;">0.03</td><td data-r="TSLA" data-c="TRI" style="background:rgb(103,160,50);color:white;">0.14</td><td data-r="TSLA" data-c="TSLA" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="TSLA" data-c="WPM" style="background:rgb(63,152,50);color:white;">0.04</td><td data-r="TSLA" data-c="XIU" style="background:rgb(221,128,50);color:white;">0.52</td><td data-r="TSLA" data-c="XOM" style="background:rgb(124,164,50);color:white;">0.20</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('WPM')">WPM</td><td data-r="WPM" data-c="AAPL" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="WPM" data-c="AMD" style="background:rgb(95,159,50);color:white;">0.12</td><td data-r="WPM" data-c="CCO" style="background:rgb(166,173,50);color:white;">0.31</td><td data-r="WPM" data-c="CVX" style="background:rgb(65,153,50);color:white;">0.04</td><td data-r="WPM" data-c="ETHA" style="background:rgb(70,154,50);color:white;">0.06</td><td data-r="WPM" data-c="FCX" style="background:rgb(183,176,50);color:white;">0.36</td><td data-r="WPM" data-c="FNV" style="background:rgb(200,50,50);color:white;">0.88</td><td data-r="WPM" data-c="GBUG" style="background:rgb(200,50,50);color:white;">0.87</td><td data-r="WPM" data-c="GOOG" style="background:rgb(69,153,50);color:white;">0.05</td><td data-r="WPM" data-c="HL" style="background:rgb(250,60,50);color:white;">0.68</td><td data-r="WPM" data-c="IBIT" style="background:rgb(94,158,50);color:white;">0.12</td><td data-r="WPM" data-c="NVDA" style="background:rgb(71,154,50);color:white;">0.06</td><td data-r="WPM" data-c="PAAS" style="background:rgb(200,50,50);color:white;">0.81</td><td data-r="WPM" data-c="QQQ" style="background:rgb(99,159,50);color:white;">0.13</td><td data-r="WPM" data-c="SLV" style="background:rgb(253,53,50);color:white;">0.69</td><td data-r="WPM" data-c="SPY" style="background:rgb(98,159,50);color:white;">0.13</td><td data-r="WPM" data-c="TLT" style="background:rgb(50,150,101);color:white;">-0.01</td><td data-r="WPM" data-c="TRI" style="background:rgb(101,160,50);color:white;">0.14</td><td data-r="WPM" data-c="TSLA" style="background:rgb(63,152,50);color:white;">0.04</td><td data-r="WPM" data-c="WPM" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="WPM" data-c="XIU" style="background:rgb(209,158,50);color:white;">0.45</td><td data-r="WPM" data-c="XOM" style="background:rgb(82,156,50);color:white;">0.09</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('XIU')">XIU</td><td data-r="XIU" data-c="AAPL" style="background:rgb(237,92,50);color:white;">0.60</td><td data-r="XIU" data-c="AMD" style="background:rgb(210,155,50);color:white;">0.46</td><td data-r="XIU" data-c="CCO" style="background:rgb(214,146,50);color:white;">0.48</td><td data-r="XIU" data-c="CVX" style="background:rgb(211,152,50);color:white;">0.46</td><td data-r="XIU" data-c="ETHA" style="background:rgb(198,179,50);color:white;">0.40</td><td data-r="XIU" data-c="FCX" style="background:rgb(234,98,50);color:white;">0.59</td><td data-r="XIU" data-c="FNV" style="background:rgb(215,144,50);color:white;">0.48</td><td data-r="XIU" data-c="GBUG" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="XIU" data-c="GOOG" style="background:rgb(208,159,50);color:white;">0.45</td><td data-r="XIU" data-c="HL" style="background:rgb(186,177,50);color:white;">0.36</td><td data-r="XIU" data-c="IBIT" style="background:rgb(199,179,50);color:white;">0.40</td><td data-r="XIU" data-c="NVDA" style="background:rgb(219,133,50);color:white;">0.51</td><td data-r="XIU" data-c="PAAS" style="background:rgb(207,161,50);color:white;">0.44</td><td data-r="XIU" data-c="QQQ" style="background:rgb(200,50,50);color:white;">0.75</td><td data-r="XIU" data-c="SLV" style="background:rgb(192,178,50);color:white;">0.38</td><td data-r="XIU" data-c="SPY" style="background:rgb(200,50,50);color:white;">0.80</td><td data-r="XIU" data-c="TLT" style="background:rgb(96,159,50);color:white;">0.12</td><td data-r="XIU" data-c="TRI" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="XIU" data-c="TSLA" style="background:rgb(221,128,50);color:white;">0.52</td><td data-r="XIU" data-c="WPM" style="background:rgb(209,158,50);color:white;">0.45</td><td data-r="XIU" data-c="XIU" style="background:#2A3F5F;color:#AABBCC;">1.00</td><td data-r="XIU" data-c="XOM" style="background:rgb(201,175,50);color:white;">0.41</td></tr>
+<tr><td class="row-header" onclick="corrSortByRow('XOM')">XOM</td><td data-r="XOM" data-c="AAPL" style="background:rgb(188,177,50);color:white;">0.37</td><td data-r="XOM" data-c="AMD" style="background:rgb(131,166,50);color:white;">0.22</td><td data-r="XOM" data-c="CCO" style="background:rgb(102,160,50);color:white;">0.14</td><td data-r="XOM" data-c="CVX" style="background:rgb(200,50,50);color:white;">0.86</td><td data-r="XOM" data-c="ETHA" style="background:rgb(110,162,50);color:white;">0.16</td><td data-r="XOM" data-c="FCX" style="background:rgb(169,173,50);color:white;">0.32</td><td data-r="XOM" data-c="FNV" style="background:rgb(91,158,50);color:white;">0.11</td><td data-r="XOM" data-c="GBUG" style="background:rgb(72,154,50);color:white;">0.06</td><td data-r="XOM" data-c="GOOG" style="background:rgb(92,158,50);color:white;">0.11</td><td data-r="XOM" data-c="HL" style="background:rgb(76,155,50);color:white;">0.07</td><td data-r="XOM" data-c="IBIT" style="background:rgb(97,159,50);color:white;">0.13</td><td data-r="XOM" data-c="NVDA" style="background:rgb(129,165,50);color:white;">0.21</td><td data-r="XOM" data-c="PAAS" style="background:rgb(108,161,50);color:white;">0.16</td><td data-r="XOM" data-c="QQQ" style="background:rgb(161,172,50);color:white;">0.30</td><td data-r="XOM" data-c="SLV" style="background:rgb(116,163,50);color:white;">0.18</td><td data-r="XOM" data-c="SPY" style="background:rgb(198,179,50);color:white;">0.40</td><td data-r="XOM" data-c="TLT" style="background:rgb(57,151,50);color:white;">0.02</td><td data-r="XOM" data-c="TRI" style="background:rgb(61,152,50);color:white;">0.03</td><td data-r="XOM" data-c="TSLA" style="background:rgb(124,164,50);color:white;">0.20</td><td data-r="XOM" data-c="WPM" style="background:rgb(82,156,50);color:white;">0.09</td><td data-r="XOM" data-c="XIU" style="background:rgb(201,175,50);color:white;">0.41</td><td data-r="XOM" data-c="XOM" style="background:#2A3F5F;color:#AABBCC;">1.00</td></tr>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 
 </tbody>
 </table>
@@ -1092,12 +1130,20 @@
     <div class="kpi-card pos">
         <div class="kpi-tooltip" data-i18n-html="tt_ann_ret">The average daily return extrapolated to a full year (252 trading days). Represents the expected yearly return if current performance continues.</div>
         <div class="kpi-label"><span data-i18n="m_ann_ret">Annualized Return</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value pos">66.03%</div>
+=======
+        <div class="kpi-value pos">63.97%</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
     <div class="kpi-card neut">
         <div class="kpi-tooltip" data-i18n-html="tt_ann_vol">Standard deviation of daily returns scaled to annual. Measures how much the portfolio value fluctuates. Higher = more risk.</div>
         <div class="kpi-label"><span data-i18n="m_ann_vol">Annualized Volatility</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value neut">26.64%</div>
+=======
+        <div class="kpi-value neut">26.47%</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
 </div>
 <div class="section-label" data-i18n="sec_risk_adj">Risk-Adjusted Returns</div>
@@ -1105,17 +1151,29 @@
     <div class="kpi-card pos">
         <div class="kpi-tooltip" data-i18n-html="tt_sharpe">Risk-adjusted return: (Portfolio Return - Risk-Free Rate) / Volatility. Above 1.0 is good, above 2.0 is very good. Measures excess return per unit of total risk.</div>
         <div class="kpi-label"><span data-i18n="m_sharpe">Sharpe Ratio</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value pos">2.317</div>
+=======
+        <div class="kpi-value pos">2.254</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
     <div class="kpi-card pos">
         <div class="kpi-tooltip" data-i18n-html="tt_sortino">Like Sharpe but only penalizes downside volatility. (Return - Risk-Free Rate) / Downside Deviation. Higher is better. Ignores upside 'risk'.</div>
         <div class="kpi-label"><span data-i18n="m_sortino">Sortino Ratio</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value pos">2.688</div>
+=======
+        <div class="kpi-value pos">2.629</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
     <div class="kpi-card pos">
         <div class="kpi-tooltip" data-i18n-html="tt_calmar">Annualized Return / Maximum Drawdown. Measures return per unit of drawdown risk. Higher = better risk-adjusted returns. Above 3.0 is excellent.</div>
         <div class="kpi-label"><span data-i18n="m_calmar">Calmar Ratio</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value pos">3.985</div>
+=======
+        <div class="kpi-value pos">3.853</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
 </div>
 <div class="section-label" data-i18n="sec_drawdown">Drawdown & Market Risk</div>
@@ -1128,7 +1186,11 @@
     <div class="kpi-card neut">
         <div class="kpi-tooltip" data-i18n-html="tt_beta">Portfolio sensitivity to S&P 500 (SPY) movements. Beta=1 means the portfolio moves with the market. Beta<1 = less volatile, Beta>1 = more volatile than market.</div>
         <div class="kpi-label"><span data-i18n="m_beta">Beta to SPY</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value neut">0.599</div>
+=======
+        <div class="kpi-value neut">0.593</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
 </div>
 <div class="section-label" data-i18n="sec_var">Value at Risk</div>
@@ -1174,12 +1236,20 @@
     <div class="kpi-card neut">
         <div class="kpi-tooltip" data-i18n-html="tt_skew">Measures asymmetry of returns. Negative skew = more extreme losses than gains (fat left tail). Positive = more extreme gains. Zero = symmetric.</div>
         <div class="kpi-label"><span data-i18n="m_skew">Skewness</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value neut">-0.925</div>
+=======
+        <div class="kpi-value neut">-0.908</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
     <div class="kpi-card neut">
         <div class="kpi-tooltip" data-i18n-html="tt_kurt">Measures 'fat tails' - how likely extreme events are vs. normal distribution. Higher kurtosis = more frequent extreme moves. Normal distribution = 3.</div>
         <div class="kpi-label"><span data-i18n="m_kurt">Kurtosis</span> <span class="help-icon">&#9432;</span></div>
+<<<<<<< HEAD
         <div class="kpi-value neut">3.834</div>
+=======
+        <div class="kpi-value neut">3.729</div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     </div>
 </div>
 <div class="section-label" data-i18n="sec_hedge">Option Hedging</div>
@@ -1216,15 +1286,22 @@
 <tbody>
 <tr>
     <td><strong>HL</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="1.496893">149.69%</td>
     <td data-val="0.705145">70.51%</td>
     <td data-val="2.061835">2.062</td>
+=======
+    <td class="positive" data-val="1.479215">147.92%</td>
+    <td data-val="0.705422">70.54%</td>
+    <td data-val="2.035964">2.036</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.368852">-36.89%</td>
     <td class="negative" data-val="-0.057762">-5.78%</td>
     <td data-val="1.24">1.24</td>
 </tr>
 <tr>
     <td><strong>GBUG</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="1.066483">106.65%</td>
     <td data-val="0.454329">45.43%</td>
     <td data-val="2.252735">2.253</td>
@@ -1246,83 +1323,165 @@
     <td class="positive" data-val="0.982974">98.30%</td>
     <td data-val="0.554801">55.48%</td>
     <td data-val="1.694253">1.694</td>
+=======
+    <td class="positive" data-val="1.053203">105.32%</td>
+    <td data-val="0.454070">45.41%</td>
+    <td data-val="2.224776">2.225</td>
+    <td class="negative" data-val="-0.210086">-21.01%</td>
+    <td class="negative" data-val="-0.041046">-4.10%</td>
+    <td data-val="0.49177852646105064">0.49</td>
+</tr>
+<tr>
+    <td><strong>SLV</strong></td>
+    <td class="positive" data-val="1.005334">100.53%</td>
+    <td data-val="0.566335">56.63%</td>
+    <td data-val="1.699231">1.699</td>
+    <td class="negative" data-val="-0.436300">-43.63%</td>
+    <td class="negative" data-val="-0.035684">-3.57%</td>
+    <td data-val="0.5154382914831048">0.52</td>
+</tr>
+<tr>
+    <td><strong>PAAS</strong></td>
+    <td class="positive" data-val="0.941603">94.16%</td>
+    <td data-val="0.554744">55.47%</td>
+    <td data-val="1.619851">1.620</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.220306">-22.03%</td>
     <td class="negative" data-val="-0.045802">-4.58%</td>
     <td data-val="1.24">1.24</td>
 </tr>
 <tr>
     <td><strong>CCO</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.968925">96.89%</td>
     <td data-val="0.500424">50.04%</td>
     <td data-val="1.850281">1.850</td>
+=======
+    <td class="positive" data-val="0.927820">92.78%</td>
+    <td data-val="0.500090">50.01%</td>
+    <td data-val="1.769323">1.769</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.255145">-25.51%</td>
     <td class="negative" data-val="-0.045546">-4.55%</td>
     <td data-val="1.101">1.10</td>
 </tr>
 <tr>
     <td><strong>WPM</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.780249">78.02%</td>
     <td data-val="0.392037">39.20%</td>
     <td data-val="1.880558">1.881</td>
+=======
+    <td class="positive" data-val="0.756918">75.69%</td>
+    <td data-val="0.391631">39.16%</td>
+    <td data-val="1.822937">1.823</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.179110">-17.91%</td>
     <td class="negative" data-val="-0.030308">-3.03%</td>
     <td data-val="0.982">0.98</td>
 </tr>
 <tr>
     <td><strong>AMD</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.712737">71.27%</td>
     <td data-val="0.623556">62.36%</td>
     <td data-val="1.074061">1.074</td>
+=======
+    <td class="positive" data-val="0.691481">69.15%</td>
+    <td data-val="0.623763">62.38%</td>
+    <td data-val="1.039627">1.040</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.327957">-32.80%</td>
     <td class="negative" data-val="-0.054822">-5.48%</td>
     <td data-val="1.949">1.95</td>
 </tr>
 <tr>
     <td><strong>FNV</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.633641">63.36%</td>
     <td data-val="0.332457">33.25%</td>
     <td data-val="1.776595">1.777</td>
+=======
+    <td class="positive" data-val="0.624381">62.44%</td>
+    <td data-val="0.332247">33.22%</td>
+    <td data-val="1.749845">1.750</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.175395">-17.54%</td>
     <td class="negative" data-val="-0.030154">-3.02%</td>
     <td data-val="0.829">0.83</td>
 </tr>
 <tr>
     <td><strong>FCX</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.619769">61.98%</td>
     <td data-val="0.510737">51.07%</td>
     <td data-val="1.129287">1.129</td>
+=======
+    <td class="positive" data-val="0.601876">60.19%</td>
+    <td data-val="0.510020">51.00%</td>
+    <td data-val="1.095792">1.096</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.337298">-33.73%</td>
     <td class="negative" data-val="-0.043634">-4.36%</td>
     <td data-val="1.434">1.43</td>
 </tr>
 <tr>
     <td><strong>GOOG</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.558534">55.85%</td>
     <td data-val="0.302486">30.25%</td>
     <td data-val="1.704321">1.704</td>
+=======
+    <td class="positive" data-val="0.580207">58.02%</td>
+    <td data-val="0.302021">30.20%</td>
+    <td data-val="1.778706">1.779</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.170416">-17.04%</td>
     <td class="negative" data-val="-0.025098">-2.51%</td>
     <td data-val="1.086">1.09</td>
 </tr>
 <tr>
     <td><strong>NVDA</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.415965">41.60%</td>
     <td data-val="0.433911">43.39%</td>
     <td data-val="0.859543">0.860</td>
     <td class="negative" data-val="-0.300421">-30.04%</td>
+=======
+    <td class="positive" data-val="0.394116">39.41%</td>
+    <td data-val="0.432726">43.27%</td>
+    <td data-val="0.811406">0.811</td>
+    <td class="negative" data-val="-0.261183">-26.12%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.041717">-4.17%</td>
     <td data-val="2.314">2.31</td>
 </tr>
 <tr>
+    <td><strong>TSLA</strong></td>
+    <td class="positive" data-val="0.357157">35.72%</td>
+    <td data-val="0.599645">59.96%</td>
+    <td data-val="0.523906">0.524</td>
+    <td class="negative" data-val="-0.279411">-27.94%</td>
+    <td class="negative" data-val="-0.053445">-5.34%</td>
+    <td data-val="1.887">1.89</td>
+</tr>
+<tr>
     <td><strong>XOM</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.337432">33.74%</td>
     <td data-val="0.248312">24.83%</td>
     <td data-val="1.185734">1.186</td>
+=======
+    <td class="positive" data-val="0.338542">33.85%</td>
+    <td data-val="0.248297">24.83%</td>
+    <td data-val="1.190273">1.190</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.166906">-16.69%</td>
     <td class="negative" data-val="-0.025639">-2.56%</td>
     <td data-val="0.358">0.36</td>
 </tr>
 <tr>
+<<<<<<< HEAD
     <td><strong>TSLA</strong></td>
     <td class="positive" data-val="0.298023">29.80%</td>
     <td data-val="0.600814">60.08%</td>
@@ -1347,10 +1506,28 @@
     <td data-val="0.670373">0.670</td>
     <td class="negative" data-val="-0.216335">-21.63%</td>
     <td class="negative" data-val="-0.022931">-2.29%</td>
+=======
+    <td><strong>XIU</strong></td>
+    <td class="positive" data-val="0.273519">27.35%</td>
+    <td data-val="0.143008">14.30%</td>
+    <td data-val="1.611929">1.612</td>
+    <td class="negative" data-val="-0.113890">-11.39%</td>
+    <td class="negative" data-val="-0.014125">-1.41%</td>
+    <td data-val="0.5981603564227933">0.60</td>
+</tr>
+<tr>
+    <td><strong>CVX</strong></td>
+    <td class="positive" data-val="0.213282">21.33%</td>
+    <td data-val="0.250766">25.08%</td>
+    <td data-val="0.679049">0.679</td>
+    <td class="negative" data-val="-0.216335">-21.63%</td>
+    <td class="negative" data-val="-0.022930">-2.29%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td data-val="0.672">0.67</td>
 </tr>
 <tr>
     <td><strong>QQQ</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.172072">17.21%</td>
     <td data-val="0.229171">22.92%</td>
     <td data-val="0.563212">0.563</td>
@@ -1364,20 +1541,42 @@
     <td data-val="0.190653">19.07%</td>
     <td data-val="0.589476">0.589</td>
     <td class="negative" data-val="-0.166948">-16.69%</td>
+=======
+    <td class="positive" data-val="0.183907">18.39%</td>
+    <td data-val="0.229570">22.96%</td>
+    <td data-val="0.613789">0.614</td>
+    <td class="negative" data-val="-0.185833">-18.58%</td>
+    <td class="negative" data-val="-0.020882">-2.09%</td>
+    <td data-val="1.1698348711623001">1.17</td>
+</tr>
+<tr>
+    <td><strong>SPY</strong></td>
+    <td class="positive" data-val="0.163190">16.32%</td>
+    <td data-val="0.190810">19.08%</td>
+    <td data-val="0.629896">0.630</td>
+    <td class="negative" data-val="-0.166235">-16.62%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.016588">-1.66%</td>
     <td data-val="1.0">1.00</td>
 </tr>
 <tr>
     <td><strong>AAPL</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.099926">9.99%</td>
     <td data-val="0.318844">31.88%</td>
     <td data-val="0.178538">0.179</td>
+=======
+    <td class="positive" data-val="0.134576">13.46%</td>
+    <td data-val="0.317713">31.77%</td>
+    <td data-val="0.288236">0.288</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.297081">-29.71%</td>
     <td class="negative" data-val="-0.032212">-3.22%</td>
     <td data-val="1.107">1.11</td>
 </tr>
 <tr>
     <td><strong>TLT</strong></td>
+<<<<<<< HEAD
     <td class="positive" data-val="0.026715">2.67%</td>
     <td data-val="0.112652">11.27%</td>
     <td data-val="-0.144556">-0.145</td>
@@ -1408,6 +1607,38 @@
     <td class="negative" data-val="-0.702941">-70.29%</td>
     <td data-val="0.339791">33.98%</td>
     <td data-val="-2.195296">-2.195</td>
+=======
+    <td class="positive" data-val="0.021005">2.10%</td>
+    <td data-val="0.112504">11.25%</td>
+    <td data-val="-0.195502">-0.196</td>
+    <td class="negative" data-val="-0.094152">-9.42%</td>
+    <td class="negative" data-val="-0.010526">-1.05%</td>
+    <td data-val="0.053288758642934045">0.05</td>
+</tr>
+<tr>
+    <td><strong>ETHA</strong></td>
+    <td class="negative" data-val="-0.117517">-11.75%</td>
+    <td data-val="0.757694">75.77%</td>
+    <td data-val="-0.211850">-0.212</td>
+    <td class="negative" data-val="-0.666137">-66.61%</td>
+    <td class="negative" data-val="-0.071548">-7.15%</td>
+    <td data-val="1.8729147498902652">1.87</td>
+</tr>
+<tr>
+    <td><strong>IBIT</strong></td>
+    <td class="negative" data-val="-0.198562">-19.86%</td>
+    <td data-val="0.460006">46.00%</td>
+    <td data-val="-0.525127">-0.525</td>
+    <td class="negative" data-val="-0.516920">-51.69%</td>
+    <td class="negative" data-val="-0.040862">-4.09%</td>
+    <td data-val="1.052037594385445">1.05</td>
+</tr>
+<tr>
+    <td><strong>TRI</strong></td>
+    <td class="negative" data-val="-0.598617">-59.86%</td>
+    <td data-val="0.353694">35.37%</td>
+    <td data-val="-1.814047">-1.814</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td class="negative" data-val="-0.633809">-63.38%</td>
     <td class="negative" data-val="-0.032440">-3.24%</td>
     <td data-val="0.296">0.30</td>
@@ -1418,12 +1649,21 @@
 <h1 data-i18n="title_stress">Portfolio Stress Testing</h1>
 <p class="info" data-i18n="info_stress">Simulated impact of market-wide moves on portfolio value using beta, including option hedging effects.</p>
 <div class="summary-box">
+<<<<<<< HEAD
     <div class="item"><div class="label" data-i18n="st_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">$1,026,634</div></div>
     <div class="item"><div class="label" data-i18n="st_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">$750,354</div></div>
     <div class="item"><div class="label" data-i18n="st_beta">Portfolio Beta</div><div class="value">0.599</div></div>
     <div class="item"><div class="label" data-i18n="st_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">$-379,010</div></div>
     <div class="item"><div class="label" data-i18n="st_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">$-277,013</div></div>
     <div class="item"><div class="label" data-i18n="st_1y_ret">1Y Portfolio Return</div><div class="value positive">66.03%</div></div>
+=======
+    <div class="item"><div class="label" data-i18n="st_pv_cad">Portfolio Value (CAD)</div><div class="value dollar-amount">$999,037</div></div>
+    <div class="item"><div class="label" data-i18n="st_pv_usd">Portfolio Value (USD)</div><div class="value dollar-amount">$730,183</div></div>
+    <div class="item"><div class="label" data-i18n="st_beta">Portfolio Beta</div><div class="value">0.593</div></div>
+    <div class="item"><div class="label" data-i18n="st_delta_cad">Option Delta (CAD)</div><div class="value dollar-amount">$-379,010</div></div>
+    <div class="item"><div class="label" data-i18n="st_delta_usd">Option Delta (USD)</div><div class="value dollar-amount">$-277,013</div></div>
+    <div class="item"><div class="label" data-i18n="st_1y_ret">1Y Portfolio Return</div><div class="value positive">63.97%</div></div>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <div class="ccy-switch-wrap">
         <span class="ccy-label active" id="ccy-lbl-cad">CAD</span>
         <label class="ccy-switch"><input type="checkbox" id="ccy-toggle" onchange="stressToggleCurrency()"><span class="ccy-slider"></span></label>
@@ -1445,142 +1685,268 @@
 <tr>
     <td><strong data-i18n="sc_bear">Depression (-50%)</strong></td>
     <td class="negative">-50%</td>
+<<<<<<< HEAD
     <td class="negative">-29.95%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-307445" data-usd="-224707">$-307,445</td>
     <td class="positive dollar-amount ccy-cell" data-cad="189505" data-usd="138507">$+189,505</td>
     <td class="negative">-11.49%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-117940" data-usd="-86201">$-117,940</td>
     <td class="dollar-amount ccy-cell" data-cad="908695" data-usd="664153">$908,695</td>
+=======
+    <td class="negative">-29.63%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-296055" data-usd="-216383">$-296,055</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="189505" data-usd="138507">$+189,505</td>
+    <td class="negative">-10.67%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-106550" data-usd="-77876">$-106,550</td>
+    <td class="dollar-amount ccy-cell" data-cad="892487" data-usd="652307">$892,487</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_deep">Severe Bear (-40%)</strong></td>
     <td class="negative">-40%</td>
+<<<<<<< HEAD
     <td class="negative">-23.96%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-245956" data-usd="-179766">$-245,956</td>
     <td class="positive dollar-amount ccy-cell" data-cad="151604" data-usd="110805">$+151,604</td>
     <td class="negative">-9.19%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-94352" data-usd="-68960">$-94,352</td>
     <td class="dollar-amount ccy-cell" data-cad="932283" data-usd="681394">$932,283</td>
+=======
+    <td class="negative">-23.71%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-236844" data-usd="-173106">$-236,844</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="151604" data-usd="110805">$+151,604</td>
+    <td class="negative">-8.53%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-85240" data-usd="-62301">$-85,240</td>
+    <td class="dollar-amount ccy-cell" data-cad="913797" data-usd="667883">$913,797</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_major_crash">Bear Market (-30%)</strong></td>
     <td class="negative">-30%</td>
+<<<<<<< HEAD
     <td class="negative">-17.97%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-184467" data-usd="-134824">$-184,467</td>
     <td class="positive dollar-amount ccy-cell" data-cad="113703" data-usd="83104">$+113,703</td>
     <td class="negative">-6.89%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-70764" data-usd="-51720">$-70,764</td>
     <td class="dollar-amount ccy-cell" data-cad="955871" data-usd="698634">$955,871</td>
+=======
+    <td class="negative">-17.78%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-177633" data-usd="-129830">$-177,633</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="113703" data-usd="83104">$+113,703</td>
+    <td class="negative">-6.40%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-63930" data-usd="-46726">$-63,930</td>
+    <td class="dollar-amount ccy-cell" data-cad="935107" data-usd="683458">$935,107</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_crash">Market Crash (-20%)</strong></td>
     <td class="negative">-20%</td>
+<<<<<<< HEAD
     <td class="negative">-11.98%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-122978" data-usd="-89883">$-122,978</td>
     <td class="positive dollar-amount ccy-cell" data-cad="75802" data-usd="55403">$+75,802</td>
     <td class="negative">-4.60%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-47176" data-usd="-34480">$-47,176</td>
     <td class="dollar-amount ccy-cell" data-cad="979459" data-usd="715874">$979,459</td>
+=======
+    <td class="negative">-11.85%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-118422" data-usd="-86553">$-118,422</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="75802" data-usd="55403">$+75,802</td>
+    <td class="negative">-4.27%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-42620" data-usd="-31150">$-42,620</td>
+    <td class="dollar-amount ccy-cell" data-cad="956417" data-usd="699033">$956,417</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_severe">Severe Correction (-15%)</strong></td>
     <td class="negative">-15%</td>
+<<<<<<< HEAD
     <td class="negative">-8.98%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-92233" data-usd="-67412">$-92,233</td>
     <td class="positive dollar-amount ccy-cell" data-cad="56851" data-usd="41552">$+56,851</td>
     <td class="negative">-3.45%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-35382" data-usd="-25860">$-35,382</td>
     <td class="dollar-amount ccy-cell" data-cad="991253" data-usd="724494">$991,253</td>
+=======
+    <td class="negative">-8.89%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-88816" data-usd="-64915">$-88,816</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="56851" data-usd="41552">$+56,851</td>
+    <td class="negative">-3.20%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-31965" data-usd="-23363">$-31,965</td>
+    <td class="dollar-amount ccy-cell" data-cad="967072" data-usd="706821">$967,072</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_major_corr">Correction (-10%)</strong></td>
     <td class="negative">-10%</td>
+<<<<<<< HEAD
     <td class="negative">-5.99%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-61489" data-usd="-44941">$-61,489</td>
     <td class="positive dollar-amount ccy-cell" data-cad="37901" data-usd="27701">$+37,901</td>
     <td class="negative">-2.30%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-23588" data-usd="-17240">$-23,588</td>
     <td class="dollar-amount ccy-cell" data-cad="1003046" data-usd="733114">$1,003,046</td>
+=======
+    <td class="negative">-5.93%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-59211" data-usd="-43277">$-59,211</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="37901" data-usd="27701">$+37,901</td>
+    <td class="negative">-2.13%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-21310" data-usd="-15575">$-21,310</td>
+    <td class="dollar-amount ccy-cell" data-cad="977727" data-usd="714608">$977,727</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_minor">Flash Crash (-5%)</strong></td>
     <td class="negative">-5%</td>
+<<<<<<< HEAD
     <td class="negative">-2.99%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-30744" data-usd="-22471">$-30,744</td>
     <td class="positive dollar-amount ccy-cell" data-cad="18950" data-usd="13851">$+18,950</td>
     <td class="negative">-1.15%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-11794" data-usd="-8620">$-11,794</td>
     <td class="dollar-amount ccy-cell" data-cad="1014840" data-usd="741734">$1,014,840</td>
+=======
+    <td class="negative">-2.96%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-29605" data-usd="-21638">$-29,605</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="18950" data-usd="13851">$+18,950</td>
+    <td class="negative">-1.07%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-10655" data-usd="-7788">$-10,655</td>
+    <td class="dollar-amount ccy-cell" data-cad="988382" data-usd="722396">$988,382</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_mild_pullback">Mild Pullback (-3%)</strong></td>
     <td class="negative">-3%</td>
+<<<<<<< HEAD
     <td class="negative">-1.80%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-18447" data-usd="-13482">$-18,447</td>
     <td class="positive dollar-amount ccy-cell" data-cad="11370" data-usd="8310">$+11,370</td>
     <td class="negative">-0.69%</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-7076" data-usd="-5172">$-7,076</td>
     <td class="dollar-amount ccy-cell" data-cad="1019558" data-usd="745182">$1,019,558</td>
+=======
+    <td class="negative">-1.78%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-17763" data-usd="-12983">$-17,763</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="11370" data-usd="8310">$+11,370</td>
+    <td class="negative">-0.64%</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-6393" data-usd="-4673">$-6,393</td>
+    <td class="dollar-amount ccy-cell" data-cad="992644" data-usd="725511">$992,644</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_modest">Rally (+5%)</strong></td>
     <td class="positive">5%</td>
+<<<<<<< HEAD
     <td class="positive">2.99%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="30744" data-usd="22471">$+30,744</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-18950" data-usd="-13851">$-18,950</td>
     <td class="positive">1.15%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="11794" data-usd="8620">$+11,794</td>
     <td class="dollar-amount ccy-cell" data-cad="1038428" data-usd="758974">$1,038,428</td>
+=======
+    <td class="positive">2.96%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="29605" data-usd="21638">$+29,605</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-18950" data-usd="-13851">$-18,950</td>
+    <td class="positive">1.07%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="10655" data-usd="7788">$+10,655</td>
+    <td class="dollar-amount ccy-cell" data-cad="1009692" data-usd="737971">$1,009,692</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_moderate">Strong Rally (+10%)</strong></td>
     <td class="positive">10%</td>
+<<<<<<< HEAD
     <td class="positive">5.99%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="61489" data-usd="44941">$+61,489</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-37901" data-usd="-27701">$-37,901</td>
     <td class="positive">2.30%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="23588" data-usd="17240">$+23,588</td>
     <td class="dollar-amount ccy-cell" data-cad="1050222" data-usd="767594">$1,050,222</td>
+=======
+    <td class="positive">5.93%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="59211" data-usd="43277">$+59,211</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-37901" data-usd="-27701">$-37,901</td>
+    <td class="positive">2.13%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="21310" data-usd="15575">$+21,310</td>
+    <td class="dollar-amount ccy-cell" data-cad="1020347" data-usd="745759">$1,020,347</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_bull">Bull Run (+20%)</strong></td>
     <td class="positive">20%</td>
+<<<<<<< HEAD
     <td class="positive">11.98%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="122978" data-usd="89883">$+122,978</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-75802" data-usd="-55403">$-75,802</td>
     <td class="positive">4.60%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="47176" data-usd="34480">$+47,176</td>
     <td class="dollar-amount ccy-cell" data-cad="1073810" data-usd="784834">$1,073,810</td>
+=======
+    <td class="positive">11.85%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="118422" data-usd="86553">$+118,422</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-75802" data-usd="-55403">$-75,802</td>
+    <td class="positive">4.27%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="42620" data-usd="31150">$+42,620</td>
+    <td class="dollar-amount ccy-cell" data-cad="1041657" data-usd="761334">$1,041,657</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_surge">Euphoria (+30%)</strong></td>
     <td class="positive">30%</td>
+<<<<<<< HEAD
     <td class="positive">17.97%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="184467" data-usd="134824">$+184,467</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-113703" data-usd="-83104">$-113,703</td>
     <td class="positive">6.89%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="70764" data-usd="51720">$+70,764</td>
     <td class="dollar-amount ccy-cell" data-cad="1097398" data-usd="802074">$1,097,398</td>
+=======
+    <td class="positive">17.78%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="177633" data-usd="129830">$+177,633</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-113703" data-usd="-83104">$-113,703</td>
+    <td class="positive">6.40%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="63930" data-usd="46726">$+63,930</td>
+    <td class="dollar-amount ccy-cell" data-cad="1062967" data-usd="776909">$1,062,967</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_bubble">Bubble (+40%)</strong></td>
     <td class="positive">40%</td>
+<<<<<<< HEAD
     <td class="positive">23.96%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="245956" data-usd="179766">$+245,956</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-151604" data-usd="-110805">$-151,604</td>
     <td class="positive">9.19%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="94352" data-usd="68960">$+94,352</td>
     <td class="dollar-amount ccy-cell" data-cad="1120986" data-usd="819314">$1,120,986</td>
+=======
+    <td class="positive">23.71%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="236844" data-usd="173106">$+236,844</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-151604" data-usd="-110805">$-151,604</td>
+    <td class="positive">8.53%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="85240" data-usd="62301">$+85,240</td>
+    <td class="dollar-amount ccy-cell" data-cad="1084277" data-usd="792484">$1,084,277</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 <tr>
     <td><strong data-i18n="sc_euphoric">Mania (+50%)</strong></td>
     <td class="positive">50%</td>
+<<<<<<< HEAD
     <td class="positive">29.95%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="307445" data-usd="224707">$+307,445</td>
     <td class="negative dollar-amount ccy-cell" data-cad="-189505" data-usd="-138507">$-189,505</td>
     <td class="positive">11.49%</td>
     <td class="positive dollar-amount ccy-cell" data-cad="117940" data-usd="86201">$+117,940</td>
     <td class="dollar-amount ccy-cell" data-cad="1144574" data-usd="836555">$1,144,574</td>
+=======
+    <td class="positive">29.63%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="296055" data-usd="216383">$+296,055</td>
+    <td class="negative dollar-amount ccy-cell" data-cad="-189505" data-usd="-138507">$-189,505</td>
+    <td class="positive">10.67%</td>
+    <td class="positive dollar-amount ccy-cell" data-cad="106550" data-usd="77876">$+106,550</td>
+    <td class="dollar-amount ccy-cell" data-cad="1105587" data-usd="808059">$1,105,587</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 </tr>
 </tbody></table>
 </div>
@@ -1603,6 +1969,7 @@
 </tr>
 <tr>
     <td><strong>Basic Materials</strong></td>
+<<<<<<< HEAD
     <td class="dollar-amount">$154,105</td>
     <td class="dollar-amount">$112,633</td>
     <td>14.6%</td>
@@ -1622,6 +1989,27 @@
     <td class="dollar-amount">$113,708</td>
     <td class="dollar-amount">$83,108</td>
     <td>10.8%</td>
+=======
+    <td class="dollar-amount">$141,927</td>
+    <td class="dollar-amount">$103,733</td>
+    <td>13.8%</td>
+    <td>8</td>
+    <td><div class="weight-bar sector-colors" style="width:83%"></div></td>
+</tr>
+<tr>
+    <td><strong>Large Blend</strong></td>
+    <td class="dollar-amount">$126,427</td>
+    <td class="dollar-amount">$92,404</td>
+    <td>12.3%</td>
+    <td>3</td>
+    <td><div class="weight-bar sector-colors" style="width:74%"></div></td>
+</tr>
+<tr>
+    <td><strong>Technology</strong></td>
+    <td class="dollar-amount">$108,621</td>
+    <td class="dollar-amount">$79,390</td>
+    <td>10.5%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td>5</td>
     <td><div class="weight-bar sector-colors" style="width:65%"></div></td>
 </tr>
@@ -1706,8 +2094,13 @@
 <tbody>
 <tr>
     <td><strong>USD</strong></td>
+<<<<<<< HEAD
     <td class="dollar-amount">$712,217</td>
     <td>67.4%</td>
+=======
+    <td class="dollar-amount">$700,472</td>
+    <td>68.0%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td>28</td>
     <td><div class="weight-bar currency-colors" style="width:100%"></div></td>
 </tr>
@@ -1727,8 +2120,13 @@
 <tbody>
 <tr>
     <td><strong>TD</strong></td>
+<<<<<<< HEAD
     <td class="dollar-amount">$995,629</td>
     <td>94.2%</td>
+=======
+    <td class="dollar-amount">$966,239</td>
+    <td>93.8%</td>
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
     <td>31</td>
     <td><div class="weight-bar account-colors" style="width:100%"></div></td>
 </tr>
@@ -1855,7 +2253,11 @@ function sortTable(tableId, colIdx, isNumeric) {
 
 // ─── Correlation Matrix JS ──────────────────────────────────────────────────
 
+<<<<<<< HEAD
 const CORR = {"AAPL": {"AAPL": 1.0, "AMD": 0.4044, "CCO": 0.172, "CVX": 0.4417, "ETHA": 0.321, "FCX": 0.4176, "FNV": 0.073, "GBUG": 0.0876, "GOOG": 0.5135, "HL": 0.1607, "IBIT": 0.2683, "NVDA": 0.4763, "PAAS": 0.1405, "QQQ": 0.7255, "SLV": 0.1045, "SPY": 0.7613, "TLT": 0.0677, "TRI": 0.1541, "TSLA": 0.5058, "WPM": 0.0525, "XIU": 0.5999, "XOM": 0.3699}, "AMD": {"AAPL": 0.4044, "AMD": 1.0, "CCO": 0.398, "CVX": 0.2655, "ETHA": 0.4393, "FCX": 0.4551, "FNV": 0.1423, "GBUG": 0.2304, "GOOG": 0.4207, "HL": 0.2828, "IBIT": 0.4261, "NVDA": 0.6242, "PAAS": 0.2429, "QQQ": 0.6807, "SLV": 0.191, "SPY": 0.625, "TLT": -0.0116, "TRI": 0.1857, "TSLA": 0.4776, "WPM": 0.1214, "XIU": 0.4637, "XOM": 0.2157}, "CCO": {"AAPL": 0.172, "AMD": 0.398, "CCO": 1.0, "CVX": 0.1702, "ETHA": 0.2428, "FCX": 0.4115, "FNV": 0.3253, "GBUG": 0.3194, "GOOG": 0.3003, "HL": 0.2807, "IBIT": 0.2483, "NVDA": 0.4425, "PAAS": 0.3119, "QQQ": 0.4438, "SLV": 0.2622, "SPY": 0.4103, "TLT": 0.0322, "TRI": 0.0425, "TSLA": 0.2797, "WPM": 0.3113, "XIU": 0.4813, "XOM": 0.1375}, "CVX": {"AAPL": 0.4417, "AMD": 0.2655, "CCO": 0.1702, "CVX": 1.0, "ETHA": 0.2406, "FCX": 0.3675, "FNV": 0.0715, "GBUG": 0.05, "GOOG": 0.1925, "HL": 0.0594, "IBIT": 0.1796, "NVDA": 0.2969, "PAAS": 0.1465, "QQQ": 0.4085, "SLV": 0.0978, "SPY": 0.5076, "TLT": 0.0555, "TRI": 0.0873, "TSLA": 0.3008, "WPM": 0.0388, "XIU": 0.4638, "XOM": 0.8584}, "ETHA": {"AAPL": 0.321, "AMD": 0.4393, "CCO": 0.2428, "CVX": 0.2406, "ETHA": 1.0, "FCX": 0.3229, "FNV": 0.078, "GBUG": 0.1839, "GOOG": 0.3703, "HL": 0.1993, "IBIT": 0.8511, "NVDA": 0.377, "PAAS": 0.2024, "QQQ": 0.5055, "SLV": 0.2009, "SPY": 0.4696, "TLT": 0.0686, "TRI": 0.0595, "TSLA": 0.4767, "WPM": 0.0537, "XIU": 0.3927, "XOM": 0.1659}, "FCX": {"AAPL": 0.4176, "AMD": 0.4551, "CCO": 0.4115, "CVX": 0.3675, "ETHA": 0.3229, "FCX": 1.0, "FNV": 0.3521, "GBUG": 0.4832, "GOOG": 0.3977, "HL": 0.4264, "IBIT": 0.3115, "NVDA": 0.4646, "PAAS": 0.4972, "QQQ": 0.6068, "SLV": 0.4636, "SPY": 0.612, "TLT": 0.0111, "TRI": 0.0705, "TSLA": 0.3738, "WPM": 0.3588, "XIU": 0.5897, "XOM": 0.3177}, "FNV": {"AAPL": 0.073, "AMD": 0.1423, "CCO": 0.3253, "CVX": 0.0715, "ETHA": 0.078, "FCX": 0.3521, "FNV": 1.0, "GBUG": 0.806, "GOOG": 0.0559, "HL": 0.6165, "IBIT": 0.1404, "NVDA": 0.0825, "PAAS": 0.7149, "QQQ": 0.162, "SLV": 0.6054, "SPY": 0.1667, "TLT": -0.0065, "TRI": 0.1241, "TSLA": 0.0939, "WPM": 0.883, "XIU": 0.4834, "XOM": 0.1112}, "GBUG": {"AAPL": 0.0876, "AMD": 0.2304, "CCO": 0.3194, "CVX": 0.05, "ETHA": 0.1839, "FCX": 0.4832, "FNV": 0.806, "GBUG": 1.0, "GOOG": 0.1362, "HL": 0.7609, "IBIT": 0.2399, "NVDA": 0.1464, "PAAS": 0.8844, "QQQ": 0.236, "SLV": 0.717, "SPY": 0.2065, "TLT": -0.0461, "TRI": 0.0814, "TSLA": 0.1521, "WPM": 0.871, "XIU": 0.4438, "XOM": 0.0606}, "GOOG": {"AAPL": 0.5135, "AMD": 0.4207, "CCO": 0.3003, "CVX": 0.1925, "ETHA": 0.3703, "FCX": 0.3977, "FNV": 0.0559, "GBUG": 0.1362, "GOOG": 1.0, "HL": 0.155, "IBIT": 0.2933, "NVDA": 0.4806, "PAAS": 0.1618, "QQQ": 0.6556, "SLV": 0.104, "SPY": 0.6163, "TLT": 0.0175, "TRI": 0.0695, "TSLA": 0.5071, "WPM": 0.0505, "XIU": 0.4446, "XOM": 0.1153}, "HL": {"AAPL": 0.1607, "AMD": 0.2828, "CCO": 0.2807, "CVX": 0.0594, "ETHA": 0.1993, "FCX": 0.4264, "FNV": 0.6165, "GBUG": 0.7609, "GOOG": 0.155, "HL": 1.0, "IBIT": 0.219, "NVDA": 0.1839, "PAAS": 0.7708, "QQQ": 0.271, "SLV": 0.6087, "SPY": 0.2442, "TLT": 0.0009, "TRI": 0.0743, "TSLA": 0.149, "WPM": 0.6758, "XIU": 0.3644, "XOM": 0.0696}, "IBIT": {"AAPL": 0.2683, "AMD": 0.4261, "CCO": 0.2483, "CVX": 0.1796, "ETHA": 0.8511, "FCX": 0.3115, "FNV": 0.1404, "GBUG": 0.2399, "GOOG": 0.2933, "HL": 0.219, "IBIT": 1.0, "NVDA": 0.3444, "PAAS": 0.2475, "QQQ": 0.4701, "SLV": 0.2232, "SPY": 0.4341, "TLT": 0.0072, "TRI": 0.1313, "TSLA": 0.4643, "WPM": 0.1161, "XIU": 0.3955, "XOM": 0.1318}, "NVDA": {"AAPL": 0.4763, "AMD": 0.6242, "CCO": 0.4425, "CVX": 0.2969, "ETHA": 0.377, "FCX": 0.4646, "FNV": 0.0825, "GBUG": 0.1464, "GOOG": 0.4806, "HL": 0.1839, "IBIT": 0.3444, "NVDA": 1.0, "PAAS": 0.2007, "QQQ": 0.821, "SLV": 0.13, "SPY": 0.7614, "TLT": -0.02, "TRI": 0.1026, "TSLA": 0.5651, "WPM": 0.0613, "XIU": 0.5068, "XOM": 0.2112}, "PAAS": {"AAPL": 0.1405, "AMD": 0.2429, "CCO": 0.3119, "CVX": 0.1465, "ETHA": 0.2024, "FCX": 0.4972, "FNV": 0.7149, "GBUG": 0.8844, "GOOG": 0.1618, "HL": 0.7708, "IBIT": 0.2475, "NVDA": 0.2007, "PAAS": 1.0, "QQQ": 0.2845, "SLV": 0.7037, "SPY": 0.2641, "TLT": -0.0452, "TRI": 0.1085, "TSLA": 0.1407, "WPM": 0.8096, "XIU": 0.4447, "XOM": 0.1543}, "QQQ": {"AAPL": 0.7255, "AMD": 0.6807, "CCO": 0.4438, "CVX": 0.4085, "ETHA": 0.5055, "FCX": 0.6068, "FNV": 0.162, "GBUG": 0.236, "GOOG": 0.6556, "HL": 0.271, "IBIT": 0.4701, "NVDA": 0.821, "PAAS": 0.2845, "QQQ": 1.0, "SLV": 0.1967, "SPY": 0.9724, "TLT": 0.0394, "TRI": 0.2362, "TSLA": 0.7059, "WPM": 0.1338, "XIU": 0.7471, "XOM": 0.2981}, "SLV": {"AAPL": 0.1045, "AMD": 0.191, "CCO": 0.2622, "CVX": 0.0978, "ETHA": 0.2009, "FCX": 0.4636, "FNV": 0.6054, "GBUG": 0.717, "GOOG": 0.104, "HL": 0.6087, "IBIT": 0.2232, "NVDA": 0.13, "PAAS": 0.7037, "QQQ": 0.1967, "SLV": 1.0, "SPY": 0.1732, "TLT": -0.0678, "TRI": 0.0572, "TSLA": 0.0401, "WPM": 0.6913, "XIU": 0.3777, "XOM": 0.1781}, "SPY": {"AAPL": 0.7613, "AMD": 0.625, "CCO": 0.4103, "CVX": 0.5076, "ETHA": 0.4696, "FCX": 0.612, "FNV": 0.1667, "GBUG": 0.2065, "GOOG": 0.6163, "HL": 0.2442, "IBIT": 0.4341, "NVDA": 0.7614, "PAAS": 0.2641, "QQQ": 0.9724, "SLV": 0.1732, "SPY": 1.0, "TLT": 0.0903, "TRI": 0.2628, "TSLA": 0.6805, "WPM": 0.1295, "XIU": 0.799, "XOM": 0.3963}, "TLT": {"AAPL": 0.0677, "AMD": -0.0116, "CCO": 0.0322, "CVX": 0.0555, "ETHA": 0.0686, "FCX": 0.0111, "FNV": -0.0065, "GBUG": -0.0461, "GOOG": 0.0175, "HL": 0.0009, "IBIT": 0.0072, "NVDA": -0.02, "PAAS": -0.0452, "QQQ": 0.0394, "SLV": -0.0678, "SPY": 0.0903, "TLT": 1.0, "TRI": 0.0757, "TSLA": 0.0222, "WPM": -0.0033, "XIU": 0.1263, "XOM": 0.018}, "TRI": {"AAPL": 0.1541, "AMD": 0.1857, "CCO": 0.0425, "CVX": 0.0873, "ETHA": 0.0595, "FCX": 0.0705, "FNV": 0.1241, "GBUG": 0.0814, "GOOG": 0.0695, "HL": 0.0743, "IBIT": 0.1313, "NVDA": 0.1026, "PAAS": 0.1085, "QQQ": 0.2362, "SLV": 0.0572, "SPY": 0.2628, "TLT": 0.0757, "TRI": 1.0, "TSLA": 0.1405, "WPM": 0.1456, "XIU": 0.3111, "XOM": 0.0348}, "TSLA": {"AAPL": 0.5058, "AMD": 0.4776, "CCO": 0.2797, "CVX": 0.3008, "ETHA": 0.4767, "FCX": 0.3738, "FNV": 0.0939, "GBUG": 0.1521, "GOOG": 0.5071, "HL": 0.149, "IBIT": 0.4643, "NVDA": 0.5651, "PAAS": 0.1407, "QQQ": 0.7059, "SLV": 0.0401, "SPY": 0.6805, "TLT": 0.0222, "TRI": 0.1405, "TSLA": 1.0, "WPM": 0.0329, "XIU": 0.5176, "XOM": 0.199}, "WPM": {"AAPL": 0.0525, "AMD": 0.1214, "CCO": 0.3113, "CVX": 0.0388, "ETHA": 0.0537, "FCX": 0.3588, "FNV": 0.883, "GBUG": 0.871, "GOOG": 0.0505, "HL": 0.6758, "IBIT": 0.1161, "NVDA": 0.0613, "PAAS": 0.8096, "QQQ": 0.1338, "SLV": 0.6913, "SPY": 0.1295, "TLT": -0.0033, "TRI": 0.1456, "TSLA": 0.0329, "WPM": 1.0, "XIU": 0.4523, "XOM": 0.0847}, "XIU": {"AAPL": 0.5999, "AMD": 0.4637, "CCO": 0.4813, "CVX": 0.4638, "ETHA": 0.3927, "FCX": 0.5897, "FNV": 0.4834, "GBUG": 0.4438, "GOOG": 0.4446, "HL": 0.3644, "IBIT": 0.3955, "NVDA": 0.5068, "PAAS": 0.4447, "QQQ": 0.7471, "SLV": 0.3777, "SPY": 0.799, "TLT": 0.1263, "TRI": 0.3111, "TSLA": 0.5176, "WPM": 0.4523, "XIU": 1.0, "XOM": 0.4079}, "XOM": {"AAPL": 0.3699, "AMD": 0.2157, "CCO": 0.1375, "CVX": 0.8584, "ETHA": 0.1659, "FCX": 0.3177, "FNV": 0.1112, "GBUG": 0.0606, "GOOG": 0.1153, "HL": 0.0696, "IBIT": 0.1318, "NVDA": 0.2112, "PAAS": 0.1543, "QQQ": 0.2981, "SLV": 0.1781, "SPY": 0.3963, "TLT": 0.018, "TRI": 0.0348, "TSLA": 0.199, "WPM": 0.0847, "XIU": 0.4079, "XOM": 1.0}};
+=======
+const CORR = {"AAPL": {"AAPL": 1.0, "AMD": 0.4058, "CCO": 0.1763, "CVX": 0.4396, "ETHA": 0.3158, "FCX": 0.4252, "FNV": 0.0767, "GBUG": 0.0911, "GOOG": 0.5115, "HL": 0.1603, "IBIT": 0.2627, "NVDA": 0.4869, "PAAS": 0.1436, "QQQ": 0.7288, "SLV": 0.1051, "SPY": 0.7642, "TLT": 0.0725, "TRI": 0.1532, "TSLA": 0.5032, "WPM": 0.0566, "XIU": 0.6019, "XOM": 0.3697}, "AMD": {"AAPL": 0.4058, "AMD": 1.0, "CCO": 0.3987, "CVX": 0.2664, "ETHA": 0.4326, "FCX": 0.4546, "FNV": 0.1418, "GBUG": 0.2301, "GOOG": 0.4213, "HL": 0.2833, "IBIT": 0.4189, "NVDA": 0.6243, "PAAS": 0.2436, "QQQ": 0.6777, "SLV": 0.1905, "SPY": 0.6232, "TLT": -0.012, "TRI": 0.171, "TSLA": 0.4781, "WPM": 0.1215, "XIU": 0.4571, "XOM": 0.216}, "CCO": {"AAPL": 0.1763, "AMD": 0.3987, "CCO": 1.0, "CVX": 0.173, "ETHA": 0.2403, "FCX": 0.4088, "FNV": 0.3236, "GBUG": 0.3179, "GOOG": 0.3033, "HL": 0.2819, "IBIT": 0.2456, "NVDA": 0.4391, "PAAS": 0.3114, "QQQ": 0.4409, "SLV": 0.2618, "SPY": 0.4089, "TLT": 0.0297, "TRI": 0.0325, "TSLA": 0.2828, "WPM": 0.3099, "XIU": 0.4778, "XOM": 0.1387}, "CVX": {"AAPL": 0.4396, "AMD": 0.2664, "CCO": 0.173, "CVX": 1.0, "ETHA": 0.2319, "FCX": 0.3696, "FNV": 0.0726, "GBUG": 0.0511, "GOOG": 0.1904, "HL": 0.0601, "IBIT": 0.1706, "NVDA": 0.2998, "PAAS": 0.149, "QQQ": 0.4066, "SLV": 0.0974, "SPY": 0.5062, "TLT": 0.0574, "TRI": 0.0756, "TSLA": 0.2981, "WPM": 0.0409, "XIU": 0.4634, "XOM": 0.8585}, "ETHA": {"AAPL": 0.3158, "AMD": 0.4326, "CCO": 0.2403, "CVX": 0.2319, "ETHA": 1.0, "FCX": 0.329, "FNV": 0.0818, "GBUG": 0.1861, "GOOG": 0.3655, "HL": 0.1934, "IBIT": 0.8534, "NVDA": 0.386, "PAAS": 0.1988, "QQQ": 0.5102, "SLV": 0.2015, "SPY": 0.4717, "TLT": 0.0725, "TRI": 0.0961, "TSLA": 0.4728, "WPM": 0.0554, "XIU": 0.3969, "XOM": 0.1618}, "FCX": {"AAPL": 0.4252, "AMD": 0.4546, "CCO": 0.4088, "CVX": 0.3696, "ETHA": 0.329, "FCX": 1.0, "FNV": 0.3509, "GBUG": 0.4823, "GOOG": 0.4025, "HL": 0.4264, "IBIT": 0.318, "NVDA": 0.4626, "PAAS": 0.4949, "QQQ": 0.6075, "SLV": 0.4646, "SPY": 0.6133, "TLT": 0.0082, "TRI": 0.075, "TSLA": 0.3798, "WPM": 0.3567, "XIU": 0.5873, "XOM": 0.3188}, "FNV": {"AAPL": 0.0767, "AMD": 0.1418, "CCO": 0.3236, "CVX": 0.0726, "ETHA": 0.0818, "FCX": 0.3509, "FNV": 1.0, "GBUG": 0.8058, "GOOG": 0.0582, "HL": 0.6166, "IBIT": 0.1439, "NVDA": 0.0801, "PAAS": 0.7137, "QQQ": 0.162, "SLV": 0.6059, "SPY": 0.167, "TLT": -0.0084, "TRI": 0.1223, "TSLA": 0.0969, "WPM": 0.8827, "XIU": 0.4822, "XOM": 0.1117}, "GBUG": {"AAPL": 0.0911, "AMD": 0.2301, "CCO": 0.3179, "CVX": 0.0511, "ETHA": 0.1861, "FCX": 0.4823, "FNV": 0.8058, "GBUG": 1.0, "GOOG": 0.1385, "HL": 0.761, "IBIT": 0.2418, "NVDA": 0.1443, "PAAS": 0.8835, "QQQ": 0.2358, "SLV": 0.7174, "SPY": 0.2067, "TLT": -0.048, "TRI": 0.0802, "TSLA": 0.155, "WPM": 0.8707, "XIU": 0.4425, "XOM": 0.0611}, "GOOG": {"AAPL": 0.5115, "AMD": 0.4213, "CCO": 0.3033, "CVX": 0.1904, "ETHA": 0.3655, "FCX": 0.4025, "FNV": 0.0582, "GBUG": 0.1385, "GOOG": 1.0, "HL": 0.1546, "IBIT": 0.2885, "NVDA": 0.4876, "PAAS": 0.1638, "QQQ": 0.6568, "SLV": 0.1044, "SPY": 0.6173, "TLT": 0.0205, "TRI": 0.0699, "TSLA": 0.5054, "WPM": 0.0531, "XIU": 0.4476, "XOM": 0.1145}, "HL": {"AAPL": 0.1603, "AMD": 0.2833, "CCO": 0.2819, "CVX": 0.0601, "ETHA": 0.1934, "FCX": 0.4264, "FNV": 0.6166, "GBUG": 0.761, "GOOG": 0.1546, "HL": 1.0, "IBIT": 0.2124, "NVDA": 0.1838, "PAAS": 0.7717, "QQQ": 0.2688, "SLV": 0.608, "SPY": 0.2427, "TLT": 0.0011, "TRI": 0.0635, "TSLA": 0.1482, "WPM": 0.6767, "XIU": 0.3643, "XOM": 0.0698}, "IBIT": {"AAPL": 0.2627, "AMD": 0.4189, "CCO": 0.2456, "CVX": 0.1706, "ETHA": 0.8534, "FCX": 0.318, "FNV": 0.1439, "GBUG": 0.2418, "GOOG": 0.2885, "HL": 0.2124, "IBIT": 1.0, "NVDA": 0.354, "PAAS": 0.2433, "QQQ": 0.4753, "SLV": 0.2235, "SPY": 0.4364, "TLT": 0.0117, "TRI": 0.1669, "TSLA": 0.4598, "WPM": 0.1175, "XIU": 0.3997, "XOM": 0.1277}, "NVDA": {"AAPL": 0.4869, "AMD": 0.6243, "CCO": 0.4391, "CVX": 0.2998, "ETHA": 0.386, "FCX": 0.4626, "FNV": 0.0801, "GBUG": 0.1443, "GOOG": 0.4876, "HL": 0.1838, "IBIT": 0.354, "NVDA": 1.0, "PAAS": 0.1972, "QQQ": 0.8229, "SLV": 0.1308, "SPY": 0.7641, "TLT": -0.0242, "TRI": 0.1082, "TSLA": 0.5741, "WPM": 0.0574, "XIU": 0.5066, "XOM": 0.2127}, "PAAS": {"AAPL": 0.1436, "AMD": 0.2436, "CCO": 0.3114, "CVX": 0.149, "ETHA": 0.1988, "FCX": 0.4949, "FNV": 0.7137, "GBUG": 0.8835, "GOOG": 0.1638, "HL": 0.7717, "IBIT": 0.2433, "NVDA": 0.1972, "PAAS": 1.0, "QQQ": 0.2816, "SLV": 0.7032, "SPY": 0.2625, "TLT": -0.0473, "TRI": 0.0949, "TSLA": 0.1426, "WPM": 0.8091, "XIU": 0.4424, "XOM": 0.1553}, "QQQ": {"AAPL": 0.7288, "AMD": 0.6777, "CCO": 0.4409, "CVX": 0.4066, "ETHA": 0.5102, "FCX": 0.6075, "FNV": 0.162, "GBUG": 0.2358, "GOOG": 0.6568, "HL": 0.2688, "IBIT": 0.4753, "NVDA": 0.8229, "PAAS": 0.2816, "QQQ": 1.0, "SLV": 0.1972, "SPY": 0.9723, "TLT": 0.039, "TRI": 0.2432, "TSLA": 0.7083, "WPM": 0.1326, "XIU": 0.7458, "XOM": 0.2971}, "SLV": {"AAPL": 0.1051, "AMD": 0.1905, "CCO": 0.2618, "CVX": 0.0974, "ETHA": 0.2015, "FCX": 0.4646, "FNV": 0.6059, "GBUG": 0.7174, "GOOG": 0.1044, "HL": 0.608, "IBIT": 0.2235, "NVDA": 0.1308, "PAAS": 0.7032, "QQQ": 0.1972, "SLV": 1.0, "SPY": 0.1737, "TLT": -0.0678, "TRI": 0.0589, "TSLA": 0.0406, "WPM": 0.6917, "XIU": 0.3796, "XOM": 0.1779}, "SPY": {"AAPL": 0.7642, "AMD": 0.6232, "CCO": 0.4089, "CVX": 0.5062, "ETHA": 0.4717, "FCX": 0.6133, "FNV": 0.167, "GBUG": 0.2067, "GOOG": 0.6173, "HL": 0.2427, "IBIT": 0.4364, "NVDA": 0.7641, "PAAS": 0.2625, "QQQ": 0.9723, "SLV": 0.1737, "SPY": 1.0, "TLT": 0.0904, "TRI": 0.2635, "TSLA": 0.6824, "WPM": 0.1291, "XIU": 0.7981, "XOM": 0.3956}, "TLT": {"AAPL": 0.0725, "AMD": -0.012, "CCO": 0.0297, "CVX": 0.0574, "ETHA": 0.0725, "FCX": 0.0082, "FNV": -0.0084, "GBUG": -0.048, "GOOG": 0.0205, "HL": 0.0011, "IBIT": 0.0117, "NVDA": -0.0242, "PAAS": -0.0473, "QQQ": 0.039, "SLV": -0.0678, "SPY": 0.0904, "TLT": 1.0, "TRI": 0.0739, "TSLA": 0.0258, "WPM": -0.0057, "XIU": 0.1247, "XOM": 0.0188}, "TRI": {"AAPL": 0.1532, "AMD": 0.171, "CCO": 0.0325, "CVX": 0.0756, "ETHA": 0.0961, "FCX": 0.075, "FNV": 0.1223, "GBUG": 0.0802, "GOOG": 0.0699, "HL": 0.0635, "IBIT": 0.1669, "NVDA": 0.1082, "PAAS": 0.0949, "QQQ": 0.2432, "SLV": 0.0589, "SPY": 0.2635, "TLT": 0.0739, "TRI": 1.0, "TSLA": 0.1423, "WPM": 0.1373, "XIU": 0.2971, "XOM": 0.0302}, "TSLA": {"AAPL": 0.5032, "AMD": 0.4781, "CCO": 0.2828, "CVX": 0.2981, "ETHA": 0.4728, "FCX": 0.3798, "FNV": 0.0969, "GBUG": 0.155, "GOOG": 0.5054, "HL": 0.1482, "IBIT": 0.4598, "NVDA": 0.5741, "PAAS": 0.1426, "QQQ": 0.7083, "SLV": 0.0406, "SPY": 0.6824, "TLT": 0.0258, "TRI": 0.1423, "TSLA": 1.0, "WPM": 0.0359, "XIU": 0.5196, "XOM": 0.198}, "WPM": {"AAPL": 0.0566, "AMD": 0.1215, "CCO": 0.3099, "CVX": 0.0409, "ETHA": 0.0554, "FCX": 0.3567, "FNV": 0.8827, "GBUG": 0.8707, "GOOG": 0.0531, "HL": 0.6767, "IBIT": 0.1175, "NVDA": 0.0574, "PAAS": 0.8091, "QQQ": 0.1326, "SLV": 0.6917, "SPY": 0.1291, "TLT": -0.0057, "TRI": 0.1373, "TSLA": 0.0359, "WPM": 1.0, "XIU": 0.4503, "XOM": 0.0856}, "XIU": {"AAPL": 0.6019, "AMD": 0.4571, "CCO": 0.4778, "CVX": 0.4634, "ETHA": 0.3969, "FCX": 0.5873, "FNV": 0.4822, "GBUG": 0.4425, "GOOG": 0.4476, "HL": 0.3643, "IBIT": 0.3997, "NVDA": 0.5066, "PAAS": 0.4424, "QQQ": 0.7458, "SLV": 0.3796, "SPY": 0.7981, "TLT": 0.1247, "TRI": 0.2971, "TSLA": 0.5196, "WPM": 0.4503, "XIU": 1.0, "XOM": 0.4095}, "XOM": {"AAPL": 0.3697, "AMD": 0.216, "CCO": 0.1387, "CVX": 0.8585, "ETHA": 0.1618, "FCX": 0.3188, "FNV": 0.1117, "GBUG": 0.0611, "GOOG": 0.1145, "HL": 0.0698, "IBIT": 0.1277, "NVDA": 0.2127, "PAAS": 0.1553, "QQQ": 0.2971, "SLV": 0.1779, "SPY": 0.3956, "TLT": 0.0188, "TRI": 0.0302, "TSLA": 0.198, "WPM": 0.0856, "XIU": 0.4095, "XOM": 1.0}};
+>>>>>>> 55a228cc3cbf9f5f681ef01dc145bb5ab65b59a7
 const TICKERS = ["AAPL", "AMD", "CCO", "CVX", "ETHA", "FCX", "FNV", "GBUG", "GOOG", "HL", "IBIT", "NVDA", "PAAS", "QQQ", "SLV", "SPY", "TLT", "TRI", "TSLA", "WPM", "XIU", "XOM"];
 let corrCurrentSort = null;
 let corrSortAsc = true;
