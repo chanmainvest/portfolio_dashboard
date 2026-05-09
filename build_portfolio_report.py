@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from scipy import stats
+from opencc import OpenCC
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
 PORTFOLIO_FILE = Path(__file__).parent / "sample_portfolio.xlsx"
@@ -257,6 +258,144 @@ def compute_returns(prices):
 def compute_correlation_matrix(returns):
     """Compute correlation matrix of daily returns."""
     return returns.corr()
+
+
+def compute_rrg_data(prices, weight_series, benchmark="SPY",
+                     trail_days=63, history_days=252, warmup_days=180):
+    """Compute Relative Rotation Graph (RRG) data for each holding vs the benchmark.
+
+    Daily-sampled. ``trail_days`` ~ 3 months (63 trading days), ``history_days``
+    ~ 1 year (252 trading days). ``warmup_days`` of extra history is fetched
+    before the display window so the rolling RS / momentum windows are fully
+    populated even at the earliest displayed date. Returns a dict suitable for
+    JSON serialization::
+
+        {
+            "dates":   ["YYYY-MM-DD", ...],     # daily closing dates
+            "tickers": ["AAPL", "MSFT", ...],
+            "series":  {ticker: [[rsr, rsm], ...], ...},
+            "trail_steps": 63,
+            "benchmark": "SPY",
+        }
+    """
+    empty = {"dates": [], "tickers": [], "series": {},
+             "trail_steps": trail_days, "benchmark": benchmark}
+    if prices is None or prices.empty:
+        return empty
+
+    # Identify which holdings have a positive weight (skip cash, benchmark, etc.).
+    candidate_tickers = [
+        t for t in prices.columns
+        if t != benchmark
+        and t in (weight_series.index if weight_series is not None else prices.columns)
+        and (weight_series is None or float(weight_series.get(t, 0)) > 0)
+    ]
+    if not candidate_tickers:
+        return empty
+
+    # Fetch an extended history (display window + warmup) so rolling stats are
+    # fully warmed up at the earliest visible date instead of bottoming out at
+    # 100 for the first ~3 months.
+    needed_calendar_days = int((history_days + warmup_days) * 1.45) + 30
+    extended = None
+    try:
+        symbols = list({benchmark, *candidate_tickers})
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=needed_calendar_days)
+        ext_data = yf.download(
+            symbols,
+            start=start_dt.strftime("%Y-%m-%d"),
+            end=end_dt.strftime("%Y-%m-%d"),
+            auto_adjust=True,
+            progress=False,
+        )
+        if not ext_data.empty:
+            if isinstance(ext_data.columns, pd.MultiIndex):
+                extended = ext_data["Close"].copy()
+            else:
+                extended = ext_data[["Close"]].copy()
+                extended.columns = symbols
+    except Exception:
+        extended = None
+
+    if extended is not None and not extended.empty:
+        # Merge extended history with anything already in `prices` so we keep
+        # any local overrides (e.g. backfilled cells) for the display window.
+        merged = extended.copy()
+        for col in prices.columns:
+            if col in merged.columns:
+                merged[col] = merged[col].combine_first(prices[col])
+            else:
+                merged[col] = prices[col]
+        daily = merged.ffill().bfill()
+    else:
+        daily = prices.ffill().bfill()
+
+    if benchmark not in daily.columns:
+        try:
+            bench_data = yf.download(benchmark, period="2y",
+                                     auto_adjust=True, progress=False)
+            if bench_data.empty:
+                return empty
+            bench_close = bench_data["Close"]
+            if isinstance(bench_close, pd.DataFrame):
+                bench_close = bench_close.iloc[:, 0]
+            daily = daily.copy()
+            daily[benchmark] = bench_close.reindex(daily.index).ffill().bfill()
+        except Exception:
+            return empty
+
+    if benchmark not in daily.columns or len(daily) < 30:
+        return empty
+
+    bench = daily[benchmark]
+
+    rs_window = 63    # ~3 months of trading days
+    mom_window = 21   # ~1 month for momentum smoothing
+
+    series = {}
+    for ticker in candidate_tickers:
+        if ticker not in daily.columns:
+            continue
+        ts = daily[ticker]
+        if ts.isna().all():
+            continue
+        rs = (ts / bench) * 100.0
+        sma_rs = rs.rolling(rs_window, min_periods=max(5, rs_window // 3)).mean()
+        std_rs = rs.rolling(rs_window, min_periods=max(5, rs_window // 3)).std()
+        rsr = 100 + (rs - sma_rs) / std_rs.replace(0, np.nan)
+
+        sma_rsr = rsr.rolling(mom_window, min_periods=max(3, mom_window // 3)).mean()
+        std_rsr = rsr.rolling(mom_window, min_periods=max(3, mom_window // 3)).std()
+        rsm = 100 + (rsr - sma_rsr) / std_rsr.replace(0, np.nan)
+
+        rsr = rsr.fillna(100).clip(93, 107)
+        rsm = rsm.fillna(100).clip(93, 107)
+
+        if len(rsr) == 0:
+            continue
+        series[ticker] = [
+            [round(float(a), 3), round(float(b), 3)]
+            for a, b in zip(rsr.values, rsm.values)
+        ]
+
+    if not series:
+        return empty
+
+    dates = [d.strftime("%Y-%m-%d") for d in daily.index]
+    if len(dates) > history_days:
+        dates = dates[-history_days:]
+        for t in series:
+            series[t] = series[t][-history_days:]
+
+    tickers = sorted(series.keys())
+    return {
+        "dates": dates,
+        "tickers": tickers,
+        "series": series,
+        "trail_steps": trail_days,
+        "benchmark": benchmark,
+    }
 
 
 def compute_option_delta_exposure(opts_df, usd_cad_rate=1.36):
@@ -539,6 +678,134 @@ COMBINED_CSS = """
     .nav .privacy-toggle:hover { background: #3A7BD5; color: white; }
     .nav .lang-toggle { background: #2A3F5F; color: #7AAFFF; border: 1px solid #3A7BD5; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 8px; }
     .nav .lang-toggle:hover { background: #3A7BD5; color: white; }
+    .nav .lang-flags { display: inline-flex; gap: 0; margin-left: 8px; align-items: center; background: #2A3F5F; border: 1px solid #3A7BD5; border-radius: 4px; overflow: hidden; padding: 0; }
+    .nav .flag-btn { background: transparent; border: 0; padding: 4px 6px; cursor: pointer; display: inline-flex; align-items: center; line-height: 1; }
+    .nav .flag-btn + .flag-btn { border-left: 1px solid #3A7BD5; }
+    .nav .flag-btn:hover { background: #3A7BD5; }
+    .nav .flag-btn.active { background: #3A7BD5; box-shadow: 0 0 0 1px #D4A843 inset; }
+    .nav .flag-btn svg { display: block; width: 24px; height: 16px; border-radius: 2px; }
+    /* Money toggle switch ($ visible / $ slashed) */
+    .nav .money-toggle { display: inline-flex; align-items: center; gap: 8px; margin-left: 10px; cursor: pointer; user-select: none; }
+    .nav .money-toggle input { display: none; }
+    .nav .money-toggle .switch { position: relative; width: 42px; height: 22px; background: #2A3F5F; border: 1px solid #3A7BD5; border-radius: 22px; transition: background .15s; }
+    .nav .money-toggle .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #D4A843; border-radius: 50%; transition: transform .15s; }
+    .nav .money-toggle input:checked + .switch { background: #3A7BD5; }
+    .nav .money-toggle input:checked + .switch::after { transform: translateX(20px); background: #FFF; }
+    .nav .money-icon { position: relative; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: #D4A843; }
+    .nav .money-icon.hide-icon::before { content: ''; position: absolute; left: -2px; top: 50%; width: 22px; height: 2px; background: #E04444; transform: translateY(-50%) rotate(-30deg); border-radius: 1px; }
+    /* Theme toggle */
+    .nav .theme-toggle { background: #2A3F5F; color: #D4A843; border: 1px solid #3A7BD5; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; }
+    .nav .theme-toggle:hover { background: #3A7BD5; color: white; }
+    /* Dashboard rotation panel */
+    .dashboard-rrg { margin-top: 24px; padding: 18px; background: #131C2E; border: 1px solid #2A3F5F; border-radius: 8px; }
+    .dashboard-rrg h2 { border-bottom: 1px solid #2A3F5F; margin-top: 0; }
+    .rrg-mini canvas { max-height: 440px; }
+    .rrg-legend-item { cursor: pointer; transition: opacity 0.15s; }
+    .rrg-legend-item:hover { opacity: 0.85; }
+    .rrg-legend-item.rrg-legend-off { opacity: 0.35; text-decoration: line-through; }
+    /* Light theme overrides */
+    body.light-theme { background: #F4F6FA; color: #1C2541; }
+    body.light-theme h1, body.light-theme h2 { color: #1C2541; border-bottom-color: #C5CEDC; }
+    body.light-theme .info { color: #5A6A82; }
+    body.light-theme .timestamp { color: #5A6A82; }
+    body.light-theme .nav { background: #FFFFFF; border: 1px solid #C5CEDC; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    body.light-theme .nav a { color: #2A5BB5; }
+    body.light-theme .nav a:hover { background: #E5EBF5; }
+    body.light-theme .nav a.active { background: #2A5BB5; color: #FFFFFF; }
+    body.light-theme .nav .lang-flags,
+    body.light-theme .nav .theme-toggle,
+    body.light-theme .nav .money-toggle .switch { background: #F0F3F8; border-color: #2A5BB5; }
+    body.light-theme .nav .flag-btn:hover { background: #D7E0F0; }
+    body.light-theme .nav .flag-btn.active { background: #2A5BB5; }
+    body.light-theme .nav .flag-btn + .flag-btn { border-left-color: #C5CEDC; }
+    body.light-theme .nav .theme-toggle { color: #B5840F; }
+    body.light-theme .nav .theme-toggle:hover { background: #2A5BB5; color: #FFF; }
+    body.light-theme .nav .money-icon { color: #B5840F; }
+    /* Privacy switch knob: on=blue→white knob, off=light bg→navy knob (visible). */
+    body.light-theme .nav .money-toggle .switch::after { background: #2A5BB5; }
+    body.light-theme .nav .money-toggle input:checked + .switch { background: #2A5BB5; }
+    body.light-theme .nav .money-toggle input:checked + .switch::after { background: #FFFFFF; }
+    body.light-theme .dashboard-rrg,
+    body.light-theme .rrg-wrap { background: #FFFFFF; border-color: #C5CEDC; }
+    body.light-theme .rrg-canvas-wrap canvas { background: #FFFFFF; }
+    body.light-theme .rrg-date { color: #1C2541; }
+    body.light-theme .rrg-legend-row { border-top-color: #C5CEDC; }
+    body.light-theme .rrg-legend-item { color: #1C2541; }
+    /* High-specificity overrides for dashboard / per-page boxes. */
+    body.light-theme #page-dashboard .header,
+    body.light-theme #page-dashboard .kpi-mini,
+    body.light-theme #page-dashboard .card,
+    body.light-theme #page-positions .kpi-card,
+    body.light-theme #page-options .kpi-card,
+    body.light-theme #page-risk .kpi-card,
+    body.light-theme #page-stress .kpi-card,
+    body.light-theme #page-exposure .exposure-box,
+    body.light-theme .table-container { background: #FFFFFF; border-color: #C5CEDC; color: #1C2541; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    body.light-theme #page-dashboard .header { background: linear-gradient(135deg, #FFFFFF 0%, #E5EBF5 100%); }
+    body.light-theme #page-dashboard .header h1,
+    body.light-theme #page-dashboard .card h2 { color: #1C2541; }
+    body.light-theme #page-dashboard .header p,
+    body.light-theme #page-dashboard .card p,
+    body.light-theme #page-dashboard .kpi-mini .label,
+    body.light-theme #page-positions .kpi-label,
+    body.light-theme #page-options .kpi-label,
+    body.light-theme #page-risk .kpi-label,
+    body.light-theme #page-stress .kpi-label { color: #5A6A82; }
+    body.light-theme #page-dashboard .card:hover { box-shadow: 0 8px 20px rgba(42,91,181,0.18); border-color: #2A5BB5; }
+    body.light-theme #page-dashboard .kpi-mini .value,
+    body.light-theme #page-positions .kpi-value,
+    body.light-theme #page-options .kpi-value,
+    body.light-theme #page-risk .kpi-value,
+    body.light-theme #page-stress .kpi-value { color: #B5840F; }
+    body.light-theme .disclaimer { color: #5A6A82; }
+    /* Tables in light mode. */
+    body.light-theme table { color: #1C2541; }
+    body.light-theme th { background: #E5EBF5; color: #1C2541; }
+    body.light-theme th:hover { background: #D7E0F0; }
+    body.light-theme thead th { background: #E5EBF5 !important; color: #1C2541 !important; }
+    body.light-theme tr:nth-child(even) { background: #F4F6FA; }
+    body.light-theme tr:nth-child(odd) { background: #FFFFFF; }
+    body.light-theme tr:hover { background: #E5EBF5; }
+    body.light-theme td { border-bottom-color: #E1E6F0; }
+    /* Correlation cells: leave inline-style backgrounds alone, but tighten frame */
+    body.light-theme #page-correlation th.row-header,
+    body.light-theme #page-correlation td.row-header { background: #E5EBF5; color: #1C2541; }
+    body.light-theme #cell-tooltip { background: #FFFFFF; color: #1C2541; border-color: #2A5BB5; box-shadow: 0 4px 12px rgba(42,91,181,0.18); }
+    body.light-theme .legend { color: #1C2541; }
+    body.light-theme .opt-badge { background: #B5840F; color: #FFFFFF; }
+    body.light-theme .opt-only-badge { background: #5A4BB5; color: #FFFFFF; }
+    /* RRG (Relative Rotation Graph) */
+    .rrg-wrap { background: #131C2E; border: 1px solid #2A3F5F; border-radius: 8px; padding: 16px; margin-top: 12px; }
+    .rrg-canvas-wrap { position: relative; width: 100%; max-width: 900px; margin: 0 auto; }
+    .rrg-canvas-wrap canvas { width: 100%; height: auto; display: block; background: #0F1729; border-radius: 6px; }
+    .rrg-controls-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; align-items: center; }
+    .rrg-controls { display: flex; align-items: center; gap: 12px; flex: 1 1 320px; min-width: 0; }
+    .rrg-play-btn { background: #3A7BD5; color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 14px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+    .rrg-play-btn:hover { background: #4A8CE5; }
+    .rrg-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; background: #2A3F5F; border-radius: 3px; outline: none; }
+    .rrg-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #D4A843; cursor: pointer; border: 2px solid #1C2541; }
+    .rrg-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #D4A843; cursor: pointer; border: 2px solid #1C2541; }
+    .rrg-date { color: #D4D8E0; font-size: 13px; font-weight: bold; min-width: 80px; text-align: right; font-family: monospace; white-space: nowrap; }
+    .rrg-trail-controls { flex: 0 1 280px; min-width: 180px; overflow: hidden; }
+    .rrg-trail-label { font-size: 12px; color: #AABBCC; min-width: 70px; white-space: nowrap; flex: 0 0 auto; }
+    .rrg-trail-slider { max-width: 120px; flex: 1 1 80px; }
+    .rrg-trail-controls .rrg-date { min-width: 28px; text-align: center; }
+    .rrg-legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2A3F5F; }
+    .rrg-legend { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 0; }
+    .rrg-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #D4D8E0; }
+    .rrg-legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .rrg-legend-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+    .rrg-mini-btn { background: #1F2D48; color: #D4D8E0; border: 1px solid #2A3F5F; border-radius: 4px; padding: 4px 12px; font-size: 11px; cursor: pointer; }
+    .rrg-mini-btn:hover { background: #2A3F5F; color: #FFF; }
+    body.light-theme .rrg-trail-label { color: #5A6A82; }
+    body.light-theme .rrg-legend-row { border-top-color: #C5CEDC; }
+    body.light-theme .rrg-mini-btn { background: #F0F3F8; color: #1C2541; border-color: #C5CEDC; }
+    body.light-theme .rrg-mini-btn:hover { background: #2A5BB5; color: #FFFFFF; border-color: #2A5BB5; }
+    @media (max-width: 700px) {
+      .rrg-controls-row { flex-direction: column; }
+      .rrg-trail-controls { flex: 1 1 100%; }
+      .rrg-legend-actions { width: 100%; justify-content: flex-start; margin-top: 8px; }
+    }
     /* Privacy */
     body.privacy-mode .dollar-amount { visibility: hidden; }
     body.privacy-mode .dollar-amount::after { content: '***'; visibility: visible; }
@@ -640,6 +907,7 @@ TAB_PAGES = [
     ("risk", "Risk Metrics", "nav_risk_metrics"),
     ("stress", "Stress Testing", "nav_stress_testing"),
     ("exposure", "Exposure", "nav_exposure"),
+    ("rotation", "Rotation", "nav_rotation"),
 ]
 
 TRANSLATIONS = {
@@ -832,7 +1100,145 @@ TRANSLATIONS = {
     "h2_account": {"en": "Account Exposure", "zh": "帳戶風險敞口"},
     "th_value_cad": {"en": "Value (CAD)", "zh": "價值 (加元)"},
     "th_value_usd": {"en": "Value (USD)", "zh": "價值 (美元)"},
+    # Sector Rotation (RRG) tab
+    "nav_rotation": {"en": "Rotation", "zh": "輪動"},
+    "card_rotation": {"en": "Sector Rotation (RRG)", "zh": "板塊輪動 (RRG)"},
+    "card_rotation_desc": {"en": "Relative Rotation Graph showing each holding's relative strength and momentum versus SPY. Drag the timeline to replay history.", "zh": "相對輪動圖：顯示每項持倉相對 SPY 的強度與動量。拖動時間軸可回放歷史。"},
+    "title_rotation": {"en": "Relative Rotation Graph", "zh": "相對輪動圖"},
+    "info_rotation": {"en": "Each dot is a holding plotted by its JdK RS-Ratio (x) and JdK RS-Momentum (y) versus SPY. Trail length is 3 months (~63 trading days). Press play or drag the slider to animate. Click a ticker in the legend to hide / show it.", "zh": "每個圓點代表一項持倉，依其相對 SPY 的 JdK RS 比率 (x 軸) 與 RS 動量 (y 軸) 繪製。尾跡長度為 3 個月 (約 63 個交易日)。按播放鍵或拖動滑桿可進行動畫。點擊圖例中的代號可隱藏／顯示對應的圓點。"},
+    "rrg_leading": {"en": "Leading", "zh": "領先"},
+    "rrg_weakening": {"en": "Weakening", "zh": "轉弱"},
+    "rrg_lagging": {"en": "Lagging", "zh": "落後"},
+    "rrg_improving": {"en": "Improving", "zh": "改善"},
+    "rrg_x_axis": {"en": "JdK RS-Ratio", "zh": "JdK RS 比率"},
+    "rrg_y_axis": {"en": "JdK RS-Momentum", "zh": "JdK RS 動量"},
+    "rrg_play": {"en": "Play", "zh": "播放"},
+    "rrg_pause": {"en": "Pause", "zh": "暫停"},
+    "rrg_show_all": {"en": "Show All", "zh": "顯示全部"},
+    "rrg_hide_all": {"en": "Hide All", "zh": "隱藏全部"},
+    "rrg_trail_label": {"en": "Trail (days)", "zh": "尾跡長度（天）"},
+    "rrg_benchmark": {"en": "Benchmark: SPY", "zh": "基準：SPY"},
+    "rrg_no_data": {"en": "Insufficient price history to compute the rotation graph.", "zh": "價格歷史資料不足，無法計算輪動圖。"},
 }
+
+
+# ─── Multi-language helpers (HK / TW / CN) ──────────────────────────────────
+# The TRANSLATIONS dict above stores Hong Kong Traditional Chinese under "zh".
+# We programmatically derive Taiwan Traditional ("zh-tw") and Mainland
+# Simplified ("zh-cn") variants using OpenCC + curated vocabulary swaps so
+# investment terminology is locale-appropriate.
+
+_CC_HK_TO_S = OpenCC("hk2s")  # HK Traditional -> Simplified Chinese (CN)
+
+# Vocabulary swaps applied AFTER the HK source for Taiwan Traditional output.
+# Characters stay Traditional; only investment-term wording is localized.
+_HK_TO_TW_VOCAB = [
+    ("互惠基金", "共同基金"),
+    ("認購期權", "買權"),
+    ("認沽期權", "賣權"),
+    ("認購", "買權"),
+    ("認沽", "賣權"),
+    ("期權", "選擇權"),
+    ("沽空", "放空"),
+    ("對沖", "避險"),
+    ("行業分類", "產業分類"),
+    ("行業", "產業"),
+    ("帳戶", "帳戶"),
+    ("券商", "券商"),
+    ("敞口", "曝險"),
+    ("組合", "組合"),
+    ("資訊", "資訊"),
+    ("回撤", "回檔"),
+    ("回報", "報酬"),
+    ("互惠", "共同"),
+    ("名義", "名目"),
+    ("標的", "標的"),
+    ("行情", "行情"),
+    ("情景", "情境"),
+]
+
+# Vocabulary swaps applied AFTER OpenCC simplification for CN output.
+_HK_TO_CN_VOCAB = [
+    ("互惠基金", "共同基金"),
+    ("认购期权", "看涨期权"),
+    ("认沽期权", "看跌期权"),
+    ("认购", "看涨期权"),
+    ("认沽", "看跌期权"),
+    ("沽空", "做空"),
+    ("对冲", "对冲"),
+    ("帐户", "账户"),
+    ("行业分类", "行业分类"),
+    ("券商", "券商"),
+    ("敞口", "敞口"),
+    ("回撤", "回撤"),
+    ("回报", "收益"),
+    ("名义", "名义"),
+    ("情景", "情景"),
+]
+
+
+def _hk_to_tw(text: str) -> str:
+    out = text
+    for a, b in _HK_TO_TW_VOCAB:
+        out = out.replace(a, b)
+    return out
+
+
+def _hk_to_cn(text: str) -> str:
+    out = _CC_HK_TO_S.convert(text)
+    for a, b in _HK_TO_CN_VOCAB:
+        out = out.replace(a, b)
+    return out
+
+
+def _augment_translations():
+    """Populate zh-tw and zh-cn variants for every translation key."""
+    for key, langs in TRANSLATIONS.items():
+        hk = langs.get("zh", langs.get("en", ""))
+        if "zh-tw" not in langs:
+            langs["zh-tw"] = _hk_to_tw(hk)
+        if "zh-cn" not in langs:
+            langs["zh-cn"] = _hk_to_cn(hk)
+
+
+_augment_translations()
+
+
+# ─── Flag toggle buttons (US / HK / TW / CN) ────────────────────────────────
+# Inline SVG flags so the HTML is self-contained and renders consistently
+# across platforms (Windows emoji fonts don't include flag glyphs).
+_FLAG_SVG = {
+    "en":    "<svg viewBox='0 0 60 40' xmlns='http://www.w3.org/2000/svg'><rect width='60' height='40' fill='#B22234'/><g fill='white'><rect y='3.08' width='60' height='3.08'/><rect y='9.23' width='60' height='3.08'/><rect y='15.38' width='60' height='3.08'/><rect y='21.54' width='60' height='3.08'/><rect y='27.69' width='60' height='3.08'/><rect y='33.85' width='60' height='3.08'/></g><rect width='24' height='21.54' fill='#3C3B6E'/><text x='12' y='13' fill='white' font-family='Arial' font-size='5' text-anchor='middle'>★★★</text><text x='12' y='19' fill='white' font-family='Arial' font-size='5' text-anchor='middle'>★★</text></svg>",
+    "zh-HK": "<svg viewBox='0 0 60 40' xmlns='http://www.w3.org/2000/svg'><rect width='60' height='40' fill='#DE2910'/><g transform='translate(30 20)' fill='white'><circle r='6'/><g fill='#DE2910'><circle cx='0' cy='-3' r='1.6'/><circle cx='2.85' cy='-0.93' r='1.6'/><circle cx='1.76' cy='2.43' r='1.6'/><circle cx='-1.76' cy='2.43' r='1.6'/><circle cx='-2.85' cy='-0.93' r='1.6'/></g></g></svg>",
+    "zh-TW": "<svg viewBox='0 0 60 40' xmlns='http://www.w3.org/2000/svg'><rect width='60' height='40' fill='#FE0000'/><rect width='30' height='20' fill='#000095'/><g transform='translate(15 10)'><circle r='5.5' fill='white'/><circle r='2.7' fill='#000095'/><polygon fill='white' points='0,-5.5 1,-1.4 5.2,-1.7 1.6,0.5 2.6,4.6 0,2.0 -2.6,4.6 -1.6,0.5 -5.2,-1.7 -1,-1.4'/></g></svg>",
+    "zh-CN": "<svg viewBox='0 0 60 40' xmlns='http://www.w3.org/2000/svg'><rect width='60' height='40' fill='#DE2910'/><g fill='#FFDE00'><polygon points='10,4 11.8,9.5 17.5,9.5 12.9,12.9 14.7,18.4 10,15 5.3,18.4 7.1,12.9 2.5,9.5 8.2,9.5'/><circle cx='20' cy='4' r='1.2'/><circle cx='24' cy='8' r='1.2'/><circle cx='24' cy='13' r='1.2'/><circle cx='20' cy='17' r='1.2'/></g></svg>",
+}
+_FLAG_LABEL = {"en": "EN", "zh-HK": "港", "zh-TW": "台", "zh-CN": "简"}
+_FLAG_TITLE = {
+    "en": "English",
+    "zh-HK": "Hong Kong (Traditional)",
+    "zh-TW": "Taiwan (Traditional)",
+    "zh-CN": "Mainland China (Simplified)",
+}
+FLAG_BUTTONS_HTML = '<span class="lang-flags">' + ''.join(
+    f'<button type="button" class="flag-btn" data-lang="{code}" '
+    f'title="{_FLAG_TITLE[code]}" onclick="setLanguage(\'{code}\')">'
+    f'{svg}</button>'
+    for code, svg in _FLAG_SVG.items()
+) + '</span>'
+
+PRIVACY_SWITCH_HTML = (
+    '<label class="money-toggle" title="Show / hide dollar amounts">'
+    '<input type="checkbox" id="privacy-switch" onchange="togglePrivacy()">'
+    '<span class="switch"></span>'
+    '<span id="privacy-icon" class="money-icon">$</span>'
+    '</label>'
+)
+
+THEME_TOGGLE_HTML = (
+    '<button type="button" id="theme-btn" class="theme-toggle" '
+    'title="Toggle dark / light theme" onclick="toggleTheme()">&#9790;</button>'
+)
 
 SORTABLE_JS = """
 function sortTable(tableId, colIdx, isNumeric) {
@@ -959,6 +1365,11 @@ def _generate_dashboard_section(portfolio_value, metrics, num_positions, num_opt
         <div class="icon">&#127991;</div>
         <h2 data-i18n="card_exposure">Sector, Currency &amp; Account Exposure</h2>
         <p data-i18n="card_exposure_desc">Portfolio breakdown by sector allocation (incl. option notional), currency denomination, and brokerage account.</p>
+    </a>
+    <a class="card" onclick="showPage('rotation')">
+        <div class="icon">&#128260;</div>
+        <h2 data-i18n="card_rotation">Sector Rotation (RRG)</h2>
+        <p data-i18n="card_rotation_desc">Relative Rotation Graph showing each holding's relative strength and momentum versus SPY. Drag the timeline to replay history.</p>
     </a>
 </div>
 <p class="disclaimer" data-i18n="disclaimer">Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.</p>
@@ -1273,7 +1684,7 @@ function corrAttachTooltips() {{
             var r = this.getAttribute('data-r');
             var c = this.getAttribute('data-c');
             var v = this.textContent;
-            var isZh = (localStorage.getItem('portfolio_language') || 'en') === 'zh';
+            var isZh = ((localStorage.getItem('portfolio_language') || 'en') + '').indexOf('zh') === 0;
             var tooltip = document.getElementById('cell-tooltip');
             tooltip.innerHTML = '<strong>' + r + '</strong> ' + (isZh ? '對' : 'vs') + ' <strong>' + c + '</strong><br>' + (isZh ? '相關性: ' : 'Correlation: ') + v;
             tooltip.style.display = 'block';
@@ -1735,12 +2146,384 @@ def _generate_exposure_section(portfolio_df, opts_df, portfolio_value, usd_cad_r
 
 # ─── Single-Page Assembler ──────────────────────────────────────────────────
 
+def _rrg_widget_html(prefix, *, height=600, with_legend=True, classes=""):
+    """Return RRG widget markup for a given DOM id prefix."""
+    legend_html = (
+        f'<div id="{prefix}-legend" class="rrg-legend"></div>'
+        if with_legend else ''
+    )
+    return f"""<div class="rrg-wrap {classes}">
+  <div class="rrg-canvas-wrap">
+    <canvas id="{prefix}-canvas" width="900" height="{height}"></canvas>
+  </div>
+  <div class="rrg-controls-row">
+    <div class="rrg-controls">
+      <button id="{prefix}-play" class="rrg-play-btn" type="button" aria-label="Play" title="Play">&#9654;</button>
+      <input id="{prefix}-slider" class="rrg-slider" type="range" min="0" max="0" value="0" step="1">
+      <div id="{prefix}-date" class="rrg-date">--</div>
+    </div>
+    <div class="rrg-controls rrg-trail-controls">
+      <span class="rrg-trail-label" data-i18n="rrg_trail_label">Trail (days)</span>
+      <input id="{prefix}-trail" class="rrg-slider rrg-trail-slider" type="range" min="1" max="126" value="63" step="1">
+      <div id="{prefix}-trail-value" class="rrg-date">63</div>
+    </div>
+  </div>
+  <div class="rrg-legend-row">
+    {legend_html}
+    <div class="rrg-legend-actions">
+      <button id="{prefix}-show-all" type="button" class="rrg-mini-btn" data-i18n="rrg_show_all">Show All</button>
+      <button id="{prefix}-hide-all" type="button" class="rrg-mini-btn" data-i18n="rrg_hide_all">Hide All</button>
+    </div>
+  </div>
+</div>"""
+
+
+def _generate_rotation_section(rrg_data):
+    """Generate the Sector Rotation (RRG) tab content + JS.
+
+    Returns (page_html, dashboard_widget_html, js).
+    The JS exposes a global ``RRG_DATA`` and ``initRrg(prefix)`` so multiple
+    widgets (e.g. the full tab + a smaller dashboard preview) can share data.
+    """
+    has_data = bool(rrg_data and rrg_data.get("dates") and rrg_data.get("series"))
+    rrg_json = json.dumps(rrg_data if has_data else {
+        "dates": [], "tickers": [], "series": {}, "trail_weeks": 12, "benchmark": "SPY"
+    })
+
+    no_data_html = (
+        ''
+        if has_data
+        else '<p class="info" data-i18n="rrg_no_data">Insufficient price history to compute the rotation graph.</p>'
+    )
+
+    page_html = f"""<div id="page-rotation" class="page">
+<h1 data-i18n="title_rotation">Relative Rotation Graph</h1>
+<p class="info" data-i18n="info_rotation">Each dot is a holding plotted by its JdK RS-Ratio (x) and JdK RS-Momentum (y) versus SPY. Trail length is 3 months (~63 trading days). Press play or drag the slider to animate. Click a ticker in the legend to hide / show it.</p>
+{no_data_html}
+{_rrg_widget_html("rrg", height=600, with_legend=True)}
+</div>"""
+
+    dashboard_widget = ""
+
+    js = f"""
+window.RRG_DATA = {rrg_json};
+
+window.initRrg = function(prefix) {{
+    const RRG_DATA = window.RRG_DATA;
+    const canvas = document.getElementById(prefix + '-canvas');
+    if (!canvas || !RRG_DATA || !RRG_DATA.dates || RRG_DATA.dates.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById(prefix + '-slider');
+    const playBtn = document.getElementById(prefix + '-play');
+    const dateLbl = document.getElementById(prefix + '-date');
+    const legend = document.getElementById(prefix + '-legend');
+
+    const PALETTE = [
+        '#3A7BD5', '#D4A843', '#7A5BD5', '#00C49A', '#E07A3A',
+        '#BD5BA8', '#3AB5D5', '#D5483A', '#9CC23A', '#E8A0BF',
+        '#5BB7D5', '#A87A3A', '#D58FA8', '#7DC2A8', '#C28F3A',
+        '#5BD5A8', '#D55B7A', '#7AD55B', '#3AD5BD', '#D53A7A'
+    ];
+    const colors = {{}};
+    RRG_DATA.tickers.forEach(function(t, i) {{ colors[t] = PALETTE[i % PALETTE.length]; }});
+
+    // Compute auto-zoomed bounds from actual data so the dots use the full grid.
+    function computeBounds() {{
+        let lo = Infinity, hi = -Infinity;
+        RRG_DATA.tickers.forEach(function(t) {{
+            const s = RRG_DATA.series[t];
+            if (!s) return;
+            for (let i = 0; i < s.length; i++) {{
+                const a = s[i][0], b = s[i][1];
+                if (a < lo) lo = a; if (a > hi) hi = a;
+                if (b < lo) lo = b; if (b > hi) hi = b;
+            }}
+        }});
+        if (!isFinite(lo) || !isFinite(hi)) {{ lo = 98; hi = 102; }}
+        // Symmetric span around 100, with padding.
+        const span = Math.max(Math.abs(hi - 100), Math.abs(100 - lo)) * 1.10;
+        const minSpan = 0.6;
+        const finalSpan = Math.max(span, minSpan);
+        return {{ min: 100 - finalSpan, max: 100 + finalSpan }};
+    }}
+    const BOUNDS = computeBounds();
+    const X_MIN = BOUNDS.min, X_MAX = BOUNDS.max;
+    const Y_MIN = BOUNDS.min, Y_MAX = BOUNDS.max;
+    const PAD = {{ left: 56, right: 24, top: 30, bottom: 44 }};
+
+    // Per-ticker visibility (toggled via legend clicks).
+    const visible = {{}};
+    RRG_DATA.tickers.forEach(function(t) {{ visible[t] = true; }});
+    let trailLen = RRG_DATA.trail_steps || RRG_DATA.trail_weeks || 63;
+
+    function isLight() {{ return document.body.classList.contains('light-theme'); }}
+    function getQuadrantLabel(key) {{
+        var T = window.__T_RRG || {{}};
+        return T[key] || key;
+    }}
+    function project(rsr, rsm, w, h) {{
+        const px = PAD.left + (rsr - X_MIN) / (X_MAX - X_MIN) * (w - PAD.left - PAD.right);
+        const py = PAD.top + (1 - (rsm - Y_MIN) / (Y_MAX - Y_MIN)) * (h - PAD.top - PAD.bottom);
+        return [px, py];
+    }}
+    function hexToRgba(hex, a) {{
+        const h = hex.replace('#', '');
+        const r = parseInt(h.substring(0, 2), 16);
+        const g = parseInt(h.substring(2, 4), 16);
+        const b = parseInt(h.substring(4, 6), 16);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    }}
+
+    // Generate "nice" axis tick values (5-7 ticks across the range).
+    function niceTicks(lo, hi, target) {{
+        target = target || 6;
+        const range = hi - lo;
+        const rough = range / target;
+        const pow10 = Math.pow(10, Math.floor(Math.log10(rough)));
+        const candidates = [1, 2, 2.5, 5, 10];
+        let step = pow10 * candidates[0];
+        for (let i = 0; i < candidates.length; i++) {{
+            const s = pow10 * candidates[i];
+            if (range / s <= target * 1.3) {{ step = s; break; }}
+        }}
+        const start = Math.ceil(lo / step) * step;
+        const ticks = [];
+        for (let v = start; v <= hi + step * 0.001; v += step) {{
+            ticks.push(Number(v.toFixed(6)));
+        }}
+        return {{ step: step, ticks: ticks }};
+    }}
+
+    function draw(idx) {{
+        const w = canvas.width, h = canvas.height;
+        const light = isLight();
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = light ? '#FFFFFF' : '#0F1729';
+        ctx.fillRect(0, 0, w, h);
+
+        const cx = PAD.left + (100 - X_MIN) / (X_MAX - X_MIN) * (w - PAD.left - PAD.right);
+        const cy = PAD.top + (1 - (100 - Y_MIN) / (Y_MAX - Y_MIN)) * (h - PAD.top - PAD.bottom);
+        const x0 = PAD.left, y0 = PAD.top;
+        const x1 = w - PAD.right, y1 = h - PAD.bottom;
+
+        // Quadrant tints.
+        const qa = light ? 0.18 : 0.10;
+        ctx.fillStyle = 'rgba(58, 123, 213, ' + qa + ')';
+        ctx.fillRect(x0, y0, cx - x0, cy - y0);
+        ctx.fillStyle = 'rgba(0, 196, 154, ' + qa + ')';
+        ctx.fillRect(cx, y0, x1 - cx, cy - y0);
+        ctx.fillStyle = 'rgba(216, 50, 50, ' + qa + ')';
+        ctx.fillRect(x0, cy, cx - x0, y1 - cy);
+        ctx.fillStyle = 'rgba(212, 168, 67, ' + qa + ')';
+        ctx.fillRect(cx, cy, x1 - cx, y1 - cy);
+
+        // Faint gridlines + tick marks.
+        const gridColor  = light ? '#E1E6F0' : '#1F2D48';
+        const axisColor  = light ? '#A0AEC0' : '#2A3F5F';
+        const tickColor  = light ? '#6A7990' : '#7A8AA0';
+        const xTicks = niceTicks(X_MIN, X_MAX, 6).ticks;
+        const yTicks = niceTicks(Y_MIN, Y_MAX, 6).ticks;
+        ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+        ctx.beginPath();
+        xTicks.forEach(function(v) {{
+            const px = project(v, 100, w, h)[0];
+            ctx.moveTo(px, y0); ctx.lineTo(px, y1);
+        }});
+        yTicks.forEach(function(v) {{
+            const py = project(100, v, w, h)[1];
+            ctx.moveTo(x0, py); ctx.lineTo(x1, py);
+        }});
+        ctx.stroke();
+
+        // Outer frame + center crosshair.
+        ctx.strokeStyle = axisColor; ctx.lineWidth = 1;
+        ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.beginPath();
+        ctx.moveTo(cx, y0); ctx.lineTo(cx, y1);
+        ctx.moveTo(x0, cy); ctx.lineTo(x1, cy);
+        ctx.stroke();
+
+        // Tick labels.
+        ctx.fillStyle = tickColor;
+        ctx.font = '10px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        xTicks.forEach(function(v) {{
+            const px = project(v, 100, w, h)[0];
+            ctx.fillText(v.toFixed(1), px, y1 + 14);
+        }});
+        ctx.textAlign = 'right';
+        yTicks.forEach(function(v) {{
+            const py = project(100, v, w, h)[1];
+            ctx.fillText(v.toFixed(1), x0 - 6, py + 4);
+        }});
+
+        // Quadrant labels.
+        ctx.fillStyle = light ? '#3A4A60' : '#8899AA';
+        ctx.font = 'bold 12px Segoe UI, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(getQuadrantLabel('rrg_improving'), cx - 6, y0 + 16);
+        ctx.textAlign = 'left';
+        ctx.fillText(getQuadrantLabel('rrg_leading'),   cx + 6, y0 + 16);
+        ctx.textAlign = 'right';
+        ctx.fillText(getQuadrantLabel('rrg_lagging'),   cx - 6, y1 - 8);
+        ctx.textAlign = 'left';
+        ctx.fillText(getQuadrantLabel('rrg_weakening'), cx + 6, y1 - 8);
+
+        // Axis titles.
+        ctx.fillStyle = light ? '#3A4A60' : '#AABBCC';
+        ctx.font = '11px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(getQuadrantLabel('rrg_x_axis'), (x0 + x1) / 2, h - 8);
+        ctx.save();
+        ctx.translate(14, (y0 + y1) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText(getQuadrantLabel('rrg_y_axis'), 0, 0);
+        ctx.restore();
+
+        // Trails + dots. Trail line tapers (fat & opaque near dot, thin & faded at tail).
+        const trail = trailLen;
+        const labelColor = light ? '#1C2541' : '#E8ECF3';
+        const dotStroke  = light ? '#FFFFFF' : '#0F1729';
+        RRG_DATA.tickers.forEach(function(t) {{
+            if (!visible[t]) return;
+            const series = RRG_DATA.series[t];
+            if (!series || idx >= series.length) return;
+            const color = colors[t];
+            // Draw trail segments newest -> oldest so newer (fatter, brighter) sit on top.
+            for (let k = 1; k <= trail && idx - k >= 0; k++) {{
+                const a = series[idx - k];
+                const b = series[idx - k + 1];
+                if (!a || !b) continue;
+                const pa = project(a[0], a[1], w, h);
+                const pb = project(b[0], b[1], w, h);
+                const t01 = 1 - (k / (trail + 1));   // 1 near dot, 0 at tail
+                const lw = 0.6 + 3.0 * t01;          // thicker near dot
+                const alpha = 0.10 + 0.85 * t01;
+                ctx.strokeStyle = hexToRgba(color, alpha);
+                ctx.lineWidth = lw;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]);
+                ctx.stroke();
+            }}
+            const cur = series[idx];
+            if (cur) {{
+                const p = project(cur[0], cur[1], w, h);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(p[0], p[1], 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = dotStroke;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = labelColor;
+                ctx.font = 'bold 11px Segoe UI, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(t, p[0] + 10, p[1] + 4);
+            }}
+        }});
+    }}
+
+    if (legend) {{
+        legend.innerHTML = '';
+        RRG_DATA.tickers.forEach(function(t) {{
+            const item = document.createElement('span');
+            item.className = 'rrg-legend-item';
+            item.setAttribute('data-ticker', t);
+            item.innerHTML = '<span class="rrg-legend-dot" style="background:' + colors[t] + '"></span>' + t;
+            item.addEventListener('click', function() {{
+                visible[t] = !visible[t];
+                item.classList.toggle('rrg-legend-off', !visible[t]);
+                draw(curIdx);
+            }});
+            legend.appendChild(item);
+        }});
+    }}
+
+    slider.max = RRG_DATA.dates.length - 1;
+    slider.value = RRG_DATA.dates.length - 1;
+    let curIdx = RRG_DATA.dates.length - 1;
+    let timer = null;
+
+    function update(idx) {{
+        curIdx = idx;
+        slider.value = idx;
+        if (dateLbl) dateLbl.textContent = RRG_DATA.dates[idx];
+        draw(idx);
+    }}
+    slider.addEventListener('input', function() {{ update(parseInt(slider.value, 10)); }});
+
+    const trailSlider = document.getElementById(prefix + '-trail');
+    const trailValueLbl = document.getElementById(prefix + '-trail-value');
+    if (trailSlider) {{
+        trailSlider.value = trailLen;
+        if (trailValueLbl) trailValueLbl.textContent = trailLen;
+        trailSlider.addEventListener('input', function() {{
+            trailLen = parseInt(trailSlider.value, 10) || 1;
+            if (trailValueLbl) trailValueLbl.textContent = trailLen;
+            draw(curIdx);
+        }});
+    }}
+
+    const showAllBtn = document.getElementById(prefix + '-show-all');
+    const hideAllBtn = document.getElementById(prefix + '-hide-all');
+    function setAllVisible(v) {{
+        RRG_DATA.tickers.forEach(function(t) {{ visible[t] = v; }});
+        if (legend) {{
+            const items = legend.querySelectorAll('.rrg-legend-item');
+            items.forEach(function(el) {{ el.classList.toggle('rrg-legend-off', !v); }});
+        }}
+        draw(curIdx);
+    }}
+    if (showAllBtn) showAllBtn.addEventListener('click', function() {{ setAllVisible(true); }});
+    if (hideAllBtn) hideAllBtn.addEventListener('click', function() {{ setAllVisible(false); }});
+
+    function stop() {{
+        if (timer) {{ clearInterval(timer); timer = null; }}
+        playBtn.innerHTML = '&#9654;';
+        playBtn.title = getQuadrantLabel('rrg_play');
+        playBtn.setAttribute('aria-label', getQuadrantLabel('rrg_play'));
+    }}
+    function play() {{
+        if (timer) return;
+        if (curIdx >= RRG_DATA.dates.length - 1) {{
+            // Restart shortly before the end so the trail is already visible.
+            update(Math.max(0, RRG_DATA.dates.length - 1 - 90));
+        }}
+        playBtn.innerHTML = '&#10073;&#10073;';
+        playBtn.title = getQuadrantLabel('rrg_pause');
+        playBtn.setAttribute('aria-label', getQuadrantLabel('rrg_pause'));
+        timer = setInterval(function() {{
+            if (curIdx >= RRG_DATA.dates.length - 1) {{ stop(); return; }}
+            update(curIdx + 1);
+        }}, 60);  // ~16 fps with daily samples
+    }}
+    playBtn.addEventListener('click', function() {{
+        if (timer) stop(); else play();
+    }});
+
+    // Register redraw hook (used by language + theme toggles).
+    window.__rrgRedraws = window.__rrgRedraws || [];
+    window.__rrgRedraws.push(function() {{ draw(curIdx); }});
+    update(curIdx);
+}};
+
+document.addEventListener('DOMContentLoaded', function() {{
+    if (!window.RRG_DATA || !window.RRG_DATA.dates || window.RRG_DATA.dates.length === 0) return;
+    window.initRrg('rrg');
+}});
+"""
+    return page_html, dashboard_widget, js
+
+
 def generate_single_html(
     portfolio_value, metrics, num_positions, num_options,
     portfolio_df, opts_df, fund_df,
     option_delta_df, total_delta_usd,
     corr_matrix, individual_risk_df,
     stress_df, beta_val,
+    rrg_data=None,
     usd_cad_rate=1.37,
 ):
     """Assemble all sections into a single HTML file with tab navigation."""
@@ -1759,6 +2542,7 @@ def generate_single_html(
         usd_cad_rate=usd_cad_rate, ann_return=metrics.get("Annualized Return", 0))
     exposure_html = _generate_exposure_section(
         portfolio_df, opts_df, portfolio_value, usd_cad_rate)
+    rotation_html, _dashboard_rrg_unused, rotation_js = _generate_rotation_section(rrg_data)
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1770,8 +2554,9 @@ def generate_single_html(
     nav_html = '<div class="nav">' + ''.join(nav_links)
     nav_html += '<span class="spacer"></span>'
     nav_html += f'<span class="timestamp"><span data-i18n="generated">Generated:</span> {timestamp}</span>'
-    nav_html += '<button id="privacy-btn" class="privacy-toggle" data-i18n="privacy_hide" onclick="togglePrivacy()">$ Hide</button>'
-    nav_html += '<button id="lang-btn" class="lang-toggle" onclick="toggleLanguage()">中</button>'
+    nav_html += FLAG_BUTTONS_HTML
+    nav_html += PRIVACY_SWITCH_HTML
+    nav_html += THEME_TOGGLE_HTML
     nav_html += '</div>'
 
     # Translations JSON for JS
@@ -1796,6 +2581,7 @@ def generate_single_html(
 {risk_html}
 {stress_html}
 {exposure_html}
+{rotation_html}
 <div id="cell-tooltip"></div>
 
 <script>
@@ -1819,49 +2605,100 @@ document.addEventListener('DOMContentLoaded', function() {{
     showPage(page);
 }});
 
-// ─── Privacy Toggle ─────────────────────────────────────────────────────────
+// ─── Privacy Toggle (switch + icon: $ visible / $ slashed) ─────────────────
 (function() {{
     var key = 'portfolio_privacy_mode';
+    function isHidden() {{ return document.body.classList.contains('privacy-mode'); }}
+    function syncUi() {{
+        var sw = document.getElementById('privacy-switch');
+        if (sw) sw.checked = isHidden();
+        var icon = document.getElementById('privacy-icon');
+        if (icon) icon.classList.toggle('hide-icon', isHidden());
+    }}
     if (localStorage.getItem(key) === 'true') {{
         document.body.classList.add('privacy-mode');
     }}
     window.togglePrivacy = function() {{
         document.body.classList.toggle('privacy-mode');
-        localStorage.setItem(key, document.body.classList.contains('privacy-mode'));
-        var btn = document.getElementById('privacy-btn');
-        if (btn) {{
-            btn.setAttribute('data-i18n', document.body.classList.contains('privacy-mode') ? 'privacy_show' : 'privacy_hide');
-            if (window.applyLanguage) applyLanguage();
-        }}
+        localStorage.setItem(key, isHidden());
+        syncUi();
     }};
-    document.addEventListener('DOMContentLoaded', function() {{
-        var btn = document.getElementById('privacy-btn');
-        if (btn && document.body.classList.contains('privacy-mode')) {{
-            btn.setAttribute('data-i18n', 'privacy_show');
-        }}
-    }});
+    document.addEventListener('DOMContentLoaded', syncUi);
 }})();
 
-// ─── Language Toggle ────────────────────────────────────────────────────────
+// ─── Theme Toggle (dark / light) ────────────────────────────────────────────
+(function() {{
+    var key = 'portfolio_theme';
+    function isLight() {{ return document.body.classList.contains('light-theme'); }}
+    function syncUi() {{
+        var btn = document.getElementById('theme-btn');
+        if (btn) btn.innerHTML = isLight() ? '&#9728;' : '&#9790;'; // sun / moon
+    }}
+    if (localStorage.getItem(key) === 'light') {{
+        document.body.classList.add('light-theme');
+    }}
+    window.toggleTheme = function() {{
+        document.body.classList.toggle('light-theme');
+        localStorage.setItem(key, isLight() ? 'light' : 'dark');
+        syncUi();
+        if (window.__rrgRedraws) {{
+            window.__rrgRedraws.forEach(function(fn) {{ try {{ fn(); }} catch(_) {{}} }});
+        }}
+    }};
+    document.addEventListener('DOMContentLoaded', syncUi);
+}})();
+
+// ─── Language Toggle (4 locales: en, zh-HK, zh-TW, zh-CN) ──────────────────
 (function() {{
     var T = {translations_json};
     var langKey = 'portfolio_language';
-    function getLang() {{ return localStorage.getItem(langKey) || 'en'; }}
+    // Map UI lang code -> key inside the translation dict.
+    var LANG_KEYS = {{
+        'en': ['en'],
+        'zh-HK': ['zh', 'zh-tw', 'zh-cn', 'en'],
+        'zh-TW': ['zh-tw', 'zh', 'zh-cn', 'en'],
+        'zh-CN': ['zh-cn', 'zh', 'zh-tw', 'en']
+    }};
+    function getLang() {{
+        var v = localStorage.getItem(langKey) || 'en';
+        // Migrate legacy 'zh' value to 'zh-HK'.
+        if (v === 'zh') v = 'zh-HK';
+        return v;
+    }}
+    function lookup(k, lang) {{
+        var entry = T[k]; if (!entry) return null;
+        var keys = LANG_KEYS[lang] || ['en'];
+        for (var i = 0; i < keys.length; i++) {{
+            if (entry[keys[i]]) return entry[keys[i]];
+        }}
+        return null;
+    }}
+    function buildRrgLabelMap(lang) {{
+        var keys = ['rrg_leading','rrg_weakening','rrg_lagging','rrg_improving',
+                    'rrg_x_axis','rrg_y_axis','rrg_play','rrg_pause',
+                    'rrg_show_all','rrg_hide_all','rrg_trail_label'];
+        var m = {{}};
+        keys.forEach(function(k) {{ var v = lookup(k, lang); if (v) m[k] = v; }});
+        return m;
+    }}
     window.applyLanguage = function() {{
         var lang = getLang();
         document.querySelectorAll('[data-i18n]').forEach(function(el) {{
-            var k = el.getAttribute('data-i18n');
-            if (T[k] && T[k][lang]) el.textContent = T[k][lang];
+            var v = lookup(el.getAttribute('data-i18n'), lang);
+            if (v != null) el.textContent = v;
         }});
         document.querySelectorAll('[data-i18n-html]').forEach(function(el) {{
-            var k = el.getAttribute('data-i18n-html');
-            if (T[k] && T[k][lang]) el.innerHTML = T[k][lang];
+            var v = lookup(el.getAttribute('data-i18n-html'), lang);
+            if (v != null) el.innerHTML = v;
         }});
-        var langBtn = document.getElementById('lang-btn');
-        if (langBtn) langBtn.textContent = lang === 'en' ? '中' : 'En';
+        document.querySelectorAll('.flag-btn').forEach(function(b) {{
+            b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        }});
+        window.__T_RRG = buildRrgLabelMap(lang);
+        if (window.__rrgRedraws) window.__rrgRedraws.forEach(function(fn) {{ try {{ fn(); }} catch(_) {{}} }});
     }};
-    window.toggleLanguage = function() {{
-        var lang = getLang() === 'en' ? 'zh' : 'en';
+    window.setLanguage = function(lang) {{
+        if (!LANG_KEYS[lang]) return;
         localStorage.setItem(langKey, lang);
         applyLanguage();
     }};
@@ -1876,6 +2713,9 @@ document.addEventListener('DOMContentLoaded', function() {{
 
 // ─── Stress Testing Currency Toggle ─────────────────────────────────────────
 {stress_js}
+
+// ─── Sector Rotation (RRG) ──────────────────────────────────────────────────
+{rotation_js}
 </script>
 </body>
 </html>"""
@@ -2032,6 +2872,12 @@ def main():
     individual_risk = compute_individual_risk(returns, fund_df, spy_returns=spy_returns_for_beta)
     print(f"  Computed risk metrics for {len(individual_risk)} tickers")
 
+    # 13b. Sector rotation (RRG) data
+    print("Computing relative rotation graph (RRG) data...")
+    rrg_data = compute_rrg_data(prices, weight_series, benchmark="SPY")
+    print(f"  RRG: {len(rrg_data.get('tickers', []))} tickers, "
+          f"{len(rrg_data.get('dates', []))} weekly points")
+
     # 14. Generate single HTML report
     print("\nGenerating single-page HTML report...")
     html = generate_single_html(
@@ -2048,6 +2894,7 @@ def main():
         individual_risk_df=individual_risk,
         stress_df=stress_df,
         beta_val=beta_val,
+        rrg_data=rrg_data,
         usd_cad_rate=usd_cad_rate,
     )
 

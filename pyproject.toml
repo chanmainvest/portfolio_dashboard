@@ -9,4 +9,5 @@ dependencies = [
     "yfinance",
     "scipy",
     "openpyxl",
+    "opencc-python-reimplemented>=0.1.7",
 ]
