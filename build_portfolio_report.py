@@ -229,11 +229,24 @@ def fetch_price_history(tickers, period_days=LOOKBACK_DAYS):
     # Drop columns that are all NaN
     prices = prices.dropna(axis=1, how="all")
 
+    # Record the first date with real data for each ticker (before filling).
+    # Only flag tickers that are genuinely late-starting (> 7 calendar days after
+    # the window open) — this avoids spurious hits from single-day holiday gaps
+    # (e.g. Canadian Victoria Day causing TSX-listed stocks to appear "late").
+    window_start_dt = prices.index[0].to_pydatetime().replace(tzinfo=None)
+    first_dates = {}
+    for col in prices.columns:
+        first_valid = prices[col].first_valid_index()
+        if first_valid is not None:
+            fv_dt = first_valid.to_pydatetime().replace(tzinfo=None)
+            if (fv_dt - window_start_dt).days > 7:
+                first_dates[col] = first_valid.strftime("%Y-%m-%d")
+
     # Forward fill then back fill
     prices = prices.ffill().bfill()
 
     print(f"  Retrieved data for {len(prices.columns)} tickers, {len(prices)} trading days")
-    return prices
+    return prices, first_dates
 
 
 def fetch_latest_prices(price_history_df):
@@ -477,8 +490,8 @@ def compute_risk_metrics(returns, weights, portfolio_value, option_delta_usd=0, 
     """Compute comprehensive risk metrics including option hedging."""
     metrics = {}
 
-    # Portfolio returns
-    portfolio_returns = (returns * weights).sum(axis=1)
+    # Portfolio returns — treat tickers with no history yet as cash (0 return)
+    portfolio_returns = (returns.fillna(0.0) * weights).sum(axis=1)
 
     # Annualized return
     mean_daily = portfolio_returns.mean()
@@ -651,6 +664,154 @@ def compute_individual_risk(returns, fund_df, spy_returns=None):
     return pd.DataFrame(results)
 
 
+def compute_performance_data(portfolio_returns, late_starters=None, weight_series=None):
+    """Fetch benchmark price history (SPY, QQQ, IEF) at three resolutions and
+    build portfolio NAV series, returning a dict with sub-keys:
+        "daily"   – 1 Y of daily data   (for the 1Y period button)
+        "weekly"  – 5 Y of weekly data  (for the 3Y / 5Y period buttons)
+        "monthly" – 10 Y of monthly data (for the 10Y period button)
+        "late_starters" – tickers with limited history
+    """
+    bench_tickers = ["SPY", "QQQ", "IEF"]
+    end_date = datetime.now()
+
+    # ── shared helper ────────────────────────────────────────────────────────
+    def _fetch_bench(interval, days_back):
+        start = (end_date - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        try:
+            raw = yf.download(
+                bench_tickers, start=start,
+                end=end_date.strftime("%Y-%m-%d"),
+                interval=interval, auto_adjust=True, progress=False,
+            )
+            if raw.empty:
+                return pd.DataFrame()
+            bp = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw[["Close"]]
+            if isinstance(bp, pd.Series):
+                bp = bp.to_frame(name=bench_tickers[0])
+            bp.index = pd.DatetimeIndex(bp.index).normalize()
+            return bp.ffill().bfill()
+        except Exception as exc:
+            print(f"  WARNING: Could not fetch {interval} benchmark data: {exc}")
+            return pd.DataFrame()
+
+    def _fetch_portfolio_prices(interval, days_back):
+        """Download extended price history for all portfolio holdings.
+        Returns (filled_prices_df, first_dates_dict) where first_dates_dict maps
+        ticker → first-available-date (captured before ffill/bfill)."""
+        if weight_series is None:
+            return pd.DataFrame(), {}
+        port_tickers_orig = [t for t in weight_series.index if weight_series.get(t, 0) != 0]
+        if not port_tickers_orig:
+            return pd.DataFrame(), {}
+        yahoo_map = {t: get_yahoo_ticker(t) for t in port_tickers_orig}
+        reverse_map = {v: k for k, v in yahoo_map.items()}
+        yahoo_tickers = list(yahoo_map.values())
+        start = (end_date - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        try:
+            raw = yf.download(yahoo_tickers, start=start,
+                              end=end_date.strftime("%Y-%m-%d"),
+                              interval=interval, auto_adjust=True, progress=False)
+            if raw.empty:
+                return pd.DataFrame(), {}
+            pp = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw[["Close"]]
+            if isinstance(pp, pd.Series):
+                pp = pp.to_frame(name=yahoo_tickers[0])
+            pp = pp.rename(columns=lambda c: reverse_map.get(c, c))
+            pp.index = pd.DatetimeIndex(pp.index).normalize()
+            # Capture first-valid dates BEFORE filling
+            window_start_dt = pp.index[0].to_pydatetime().replace(tzinfo=None)
+            first_dates = {}
+            for col in pp.columns:
+                fvi = pp[col].first_valid_index()
+                if fvi is not None:
+                    fv_dt = fvi.to_pydatetime().replace(tzinfo=None)
+                    if (fv_dt - window_start_dt).days > 7:
+                        first_dates[col] = fvi.strftime("%Y-%m-%d")
+            return pp.ffill().bfill(), first_dates
+        except Exception as exc:
+            print(f"  WARNING: {interval} portfolio price fetch failed: {exc}")
+            return pd.DataFrame(), {}
+
+    def _port_nav_from_prices(port_prices):
+        """Compute portfolio NAV from a price DataFrame using current weights.
+        Tickers with missing history are treated as cash (0% return)."""
+        if port_prices is None or port_prices.empty or weight_series is None:
+            return None
+        available = [t for t in weight_series.index
+                     if t in port_prices.columns and weight_series.get(t, 0) != 0]
+        if not available:
+            return None
+        w = weight_series[available]
+        w_total = w.sum()
+        if w_total == 0:
+            return None
+        # Keep full-weight approach (missing tickers treated as cash = 0 return)
+        all_tickers = [t for t in weight_series.index if weight_series.get(t, 0) != 0]
+        w_full = weight_series[all_tickers] / weight_series[all_tickers].sum()
+        rets = port_prices.reindex(columns=all_tickers).pct_change().fillna(0.0)
+        port_rets = (rets * w_full).sum(axis=1)
+        nav = 1000.0 * (1 + port_rets).cumprod()
+        nav.index = pd.DatetimeIndex(nav.index).normalize()
+        return nav
+
+    def _build_dataset(bench_prices, port_nav_series):
+        def _to_list(series, dates):
+            if series is None or (hasattr(series, "empty") and series.empty):
+                return [None] * len(dates)
+            idx_map = {ts: val for ts, val in series.items()}
+            return [
+                round(float(idx_map[d]), 4) if d in idx_map and not pd.isna(idx_map[d]) else None
+                for d in dates
+            ]
+
+        all_dt = set()
+        if port_nav_series is not None and not port_nav_series.empty:
+            all_dt.update(port_nav_series.index)
+        if not bench_prices.empty:
+            all_dt.update(bench_prices.index)
+        sorted_dt = sorted(all_dt)
+
+        ds = {"dates": [d.strftime("%Y-%m-%d") for d in sorted_dt]}
+        ds["portfolio"] = _to_list(port_nav_series, sorted_dt)
+        for t in bench_tickers:
+            ds[t] = (
+                _to_list(bench_prices[t], sorted_dt)
+                if not bench_prices.empty and t in bench_prices.columns
+                else [None] * len(sorted_dt)
+            )
+        return ds
+
+    # ── portfolio NAV from daily returns (1Y) ───────────────────────────────
+    def _port_nav_daily(returns):
+        if returns is None or returns.empty:
+            return None
+        nav = 1000.0 * (1 + returns).cumprod()
+        nav.index = pd.DatetimeIndex(nav.index).normalize()
+        return nav
+
+    # ── fetch three resolutions ──────────────────────────────────────────────
+    print("Fetching benchmark price history for performance chart...")
+    bench_d = _fetch_bench("1d",  365 + 30)
+    bench_w = _fetch_bench("1wk", 365 * 5 + 60)
+    bench_m = _fetch_bench("1mo", 365 * 10 + 60)
+    print(f"  benchmarks: daily={len(bench_d)}, weekly={len(bench_w)}, monthly={len(bench_m)}")
+
+    # Portfolio prices at extended resolutions (current weights projected back)
+    port_prices_w, ls_5y = _fetch_portfolio_prices("1wk", 365 * 5 + 60)
+    port_prices_m, _     = _fetch_portfolio_prices("1mo", 365 * 10 + 60)
+    print(f"  portfolio prices: weekly={len(port_prices_w)}, monthly={len(port_prices_m)}")
+
+    # Use 5Y weekly late-starters if any (supersedes the narrower 1Y detection)
+    computed_late_starters = ls_5y if ls_5y else (late_starters or {})
+
+    datasets = {
+        "daily":   _build_dataset(bench_d, _port_nav_daily(portfolio_returns)),
+        "weekly":  _build_dataset(bench_w, _port_nav_from_prices(port_prices_w)),
+        "monthly": _build_dataset(bench_m, _port_nav_from_prices(port_prices_m)),
+        "late_starters": computed_late_starters,
+    }
+    return datasets
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -897,6 +1058,37 @@ COMBINED_CSS = """
     .sector-colors { background: linear-gradient(90deg, #3A7BD5, #00C49A); }
     .currency-colors { background: linear-gradient(90deg, #D4A843, #E07A3A); }
     .account-colors { background: linear-gradient(90deg, #7A5BD5, #BD5BA8); }
+    /* Performance vs Benchmarks */
+    .perf-controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; padding: 14px 18px; background: #1C2541; border-radius: 8px; margin-bottom: 18px; }
+    body.light-theme .perf-controls { background: #F5F7FA; border: 1px solid #C5CEDC; }
+    .perf-control-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .perf-control-label { color: #AABBCC; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    body.light-theme .perf-control-label { color: #556677; }
+    .perf-period-btn { background: transparent; color: #AABBCC; border: 1px solid #2A3F5F; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .perf-period-btn:hover { background: #2A3F5F; color: #E0E0E0; }
+    .perf-period-btn.active { background: #3A7BD5; color: white; border-color: #3A7BD5; }
+    body.light-theme .perf-period-btn { color: #556677; border-color: #C5CEDC; }
+    body.light-theme .perf-period-btn:hover { background: #E1E6F0; color: #1C2541; }
+    body.light-theme .perf-period-btn.active { background: #3A7BD5; color: white; border-color: #3A7BD5; }
+    .perf-bond-slider { width: 220px; accent-color: #D4A843; cursor: pointer; }
+    .perf-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #E0E0E0; font-size: 13px; user-select: none; }
+    .perf-toggle-fixed { cursor: default; }
+    body.light-theme .perf-toggle { color: #1C2541; }
+    .perf-toggle input { cursor: pointer; }
+    .perf-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+    .perf-chart-wrap { position: relative; width: 100%; max-width: 1200px; margin: 0 auto; }
+    .perf-chart-wrap canvas { width: 100%; height: auto; display: block; background: #0F1729; border-radius: 6px; cursor: crosshair; }
+    body.light-theme .perf-chart-wrap canvas { background: #FFFFFF; border: 1px solid #C5CEDC; }
+    .perf-tooltip { position: absolute; display: none; background: rgba(15,23,41,0.95); color: #E0E0E0; border: 1px solid #2A3F5F; border-radius: 6px; padding: 8px 10px; font-size: 12px; min-width: 200px; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10; line-height: 1.7; }
+    body.light-theme .perf-tooltip { background: rgba(255,255,255,0.97); color: #1C2541; border-color: #C5CEDC; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .perf-tooltip-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .perf-footnote { margin-top: 14px; padding: 10px 14px; background: #131C2E; border: 1px solid #2A3F5F; border-radius: 6px; font-size: 12px; color: #8899AA; line-height: 1.8; }
+    body.light-theme .perf-footnote { background: #F5F7FA; border-color: #C5CEDC; color: #556677; }
+    .perf-footnote-label { color: #AABBCC; font-weight: bold; margin-right: 6px; }
+    body.light-theme .perf-footnote-label { color: #334455; }
+    .perf-footnote-item { display: inline-block; background: #1C2541; border: 1px solid #2A3F5F; border-radius: 3px; padding: 1px 7px; margin: 2px 4px; color: #D0D8E8; }
+    body.light-theme .perf-footnote-item { background: #E8EDF5; border-color: #C5CEDC; color: #1C2541; }
+    .perf-footnote-tail { color: #6677AA; font-style: italic; }
 """
 
 TAB_PAGES = [
@@ -908,6 +1100,7 @@ TAB_PAGES = [
     ("stress", "Stress Testing", "nav_stress_testing"),
     ("exposure", "Exposure", "nav_exposure"),
     ("rotation", "Rotation", "nav_rotation"),
+    ("performance", "Performance", "nav_performance"),
 ]
 
 TRANSLATIONS = {
@@ -1119,6 +1312,32 @@ TRANSLATIONS = {
     "rrg_trail_label": {"en": "Trail (days)", "zh": "尾跡長度（天）"},
     "rrg_benchmark": {"en": "Benchmark: SPY", "zh": "基準：SPY"},
     "rrg_no_data": {"en": "Insufficient price history to compute the rotation graph.", "zh": "價格歷史資料不足，無法計算輪動圖。"},
+    # Performance vs Benchmarks tab
+    "nav_performance": {"en": "Performance", "zh": "表現"},
+    "card_performance": {"en": "Performance vs Benchmarks", "zh": "表現對比基準"},
+    "card_performance_desc": {"en": "Compare portfolio returns to S&P 500, NASDAQ 100, and a balanced stock/bond portfolio with adjustable bond allocation and 1Y/3Y/5Y/10Y windows.", "zh": "將投資組合回報與標普500、納斯達克100，以及可調整債券比重的股債平衡組合作對比，提供1年／3年／5年／10年窗口。"},
+    "title_performance": {"en": "Portfolio Performance vs Benchmarks", "zh": "投資組合表現對比基準"},
+    "info_performance": {"en": "Compare your portfolio against S&P 500 (SPY), NASDAQ 100 (QQQ), and a quarterly-rebalanced balanced portfolio (SPY/IEF). Lines are normalised to 0% at the start of the selected window. Hover for values.", "zh": "將投資組合與標普500（SPY）、納斯達克100（QQQ）及按季再平衡的股債平衡組合（SPY/IEF）作對比。圖線以所選時段起點為0%基準。懸停查看數值。"},
+    "perf_period": {"en": "Period", "zh": "時段"},
+    "perf_bond_alloc": {"en": "Bond allocation", "zh": "債券配置"},
+    "perf_bench_spy": {"en": "S&P 500 (SPY)", "zh": "標普500 (SPY)"},
+    "perf_bench_qqq": {"en": "NASDAQ 100 (QQQ)", "zh": "納斯達克100 (QQQ)"},
+    "perf_bench_balanced": {"en": "Balanced (SPY/IEF)", "zh": "平衡組合 (SPY/IEF)"},
+    "perf_line_portfolio": {"en": "Portfolio", "zh": "投資組合"},
+    "perf_line_spy": {"en": "S&P 500", "zh": "標普500"},
+    "perf_line_qqq": {"en": "NASDAQ 100", "zh": "納斯達克100"},
+    "perf_line_balanced": {"en": "Balanced", "zh": "平衡組合"},
+    "perf_no_data": {"en": "Insufficient price history to compute performance comparison.", "zh": "價格歷史資料不足，無法計算表現對比。"},
+    "perf_footnote_label": {"en": "Portfolio note:", "zh": "投資組合備註："},
+    "perf_footnote_avail": {"en": "available from", "zh": "數據起始日"},
+    "perf_footnote_tail": {"en": "\u2014 treated as cash (0% return) before each ticker\u2019s first trading date.", "zh": "\u2014 各代碼上市前以現金（0%回報）計算。"},
+    "perf_period_1m":  {"en": "1M",  "zh": "1個月"},
+    "perf_period_3m":  {"en": "3M",  "zh": "3個月"},
+    "perf_period_6m":  {"en": "6M",  "zh": "6個月"},
+    "perf_period_1y":  {"en": "1Y",  "zh": "1年"},
+    "perf_period_3y":  {"en": "3Y",  "zh": "3年"},
+    "perf_period_5y":  {"en": "5Y",  "zh": "5年"},
+    "perf_period_10y": {"en": "10Y", "zh": "10年"},
 }
 
 
@@ -1370,6 +1589,11 @@ def _generate_dashboard_section(portfolio_value, metrics, num_positions, num_opt
         <div class="icon">&#128260;</div>
         <h2 data-i18n="card_rotation">Sector Rotation (RRG)</h2>
         <p data-i18n="card_rotation_desc">Relative Rotation Graph showing each holding's relative strength and momentum versus SPY. Drag the timeline to replay history.</p>
+    </a>
+    <a class="card" onclick="showPage('performance')">
+        <div class="icon">&#128200;</div>
+        <h2 data-i18n="card_performance">Performance vs Benchmarks</h2>
+        <p data-i18n="card_performance_desc">Compare portfolio returns to S&amp;P 500, NASDAQ 100, and a balanced stock/bond portfolio with adjustable bond allocation and 1Y/3Y/5Y/10Y windows.</p>
     </a>
 </div>
 <p class="disclaimer" data-i18n="disclaimer">Disclaimer: This dashboard is for informational and educational purposes only and is not investment advice.</p>
@@ -2517,6 +2741,508 @@ document.addEventListener('DOMContentLoaded', function() {{
     return page_html, dashboard_widget, js
 
 
+def _perf_footnote_html(late_starters):
+    """Return a footnote box listing tickers that lack full price history."""
+    if not late_starters:
+        return ""
+    items = "".join(
+        f'<span class="perf-footnote-item"><b>{t}</b> <span data-i18n="perf_footnote_avail">available from</span> {d}</span>'
+        for t, d in sorted(late_starters.items(), key=lambda x: x[1])
+    )
+    return (
+        '<div class="perf-footnote">'
+        '<span class="perf-footnote-label" data-i18n="perf_footnote_label">Portfolio note:</span> '
+        f'{items}'
+        '<span class="perf-footnote-tail" data-i18n="perf_footnote_tail"> &#8212; treated as cash (0% return) before each ticker&#8217;s first trading date.</span>'
+        '</div>'
+    )
+
+
+def _generate_performance_section(perf_data):
+    """Generate the Performance vs Benchmarks tab with a Canvas line chart."""
+    perf_json = json.dumps(perf_data, ensure_ascii=False, separators=(',', ':'))
+
+    page_html = f"""<div id="page-performance" class="page">
+<h1 data-i18n="title_performance">Portfolio Performance vs Benchmarks</h1>
+<p class="info" data-i18n="info_performance">Compare your portfolio against S&amp;P 500 (SPY), NASDAQ 100 (QQQ), and a quarterly-rebalanced balanced portfolio (SPY/IEF). Lines are normalised to 0% at the start of the selected window. Hover for values.</p>
+
+<div class="perf-controls">
+  <div class="perf-control-group">
+    <span class="perf-control-label" data-i18n="perf_period">Period:</span>
+    <button type="button" class="perf-period-btn" data-period="1" data-i18n="perf_period_1m">1M</button>
+    <button type="button" class="perf-period-btn" data-period="3" data-i18n="perf_period_3m">3M</button>
+    <button type="button" class="perf-period-btn" data-period="6" data-i18n="perf_period_6m">6M</button>
+    <button type="button" class="perf-period-btn active" data-period="12" data-i18n="perf_period_1y">1Y</button>
+    <button type="button" class="perf-period-btn" data-period="36" data-i18n="perf_period_3y">3Y</button>
+    <button type="button" class="perf-period-btn" data-period="60" data-i18n="perf_period_5y">5Y</button>
+    <button type="button" class="perf-period-btn" data-period="120" data-i18n="perf_period_10y">10Y</button>
+  </div>
+  <div class="perf-control-group">
+    <span class="perf-control-label"><span data-i18n="perf_bond_alloc">Bond allocation</span>: <span id="perf-bond-value">40</span>%</span>
+    <input id="perf-bond-slider" type="range" min="0" max="100" value="40" step="1" class="perf-bond-slider">
+  </div>
+  <div class="perf-control-group">
+    <span class="perf-toggle perf-toggle-fixed"><span class="perf-swatch" style="background:#FF6B6B"></span><span data-i18n="perf_line_portfolio">Portfolio</span></span>
+    <label class="perf-toggle"><input type="checkbox" id="perf-show-spy" checked><span class="perf-swatch" style="background:#3A7BD5"></span><span data-i18n="perf_bench_spy">S&amp;P 500 (SPY)</span></label>
+    <label class="perf-toggle"><input type="checkbox" id="perf-show-qqq" checked><span class="perf-swatch" style="background:#00C49A"></span><span data-i18n="perf_bench_qqq">NASDAQ 100 (QQQ)</span></label>
+    <label class="perf-toggle"><input type="checkbox" id="perf-show-bal" checked><span class="perf-swatch" style="background:#D4A843"></span><span data-i18n="perf_bench_balanced">Balanced (SPY/IEF)</span></label>
+  </div>
+</div>
+<div class="perf-chart-wrap">
+  <canvas id="perf-canvas" width="1100" height="500"></canvas>
+  <div id="perf-tooltip" class="perf-tooltip"></div>
+</div>
+{_perf_footnote_html(perf_data.get('late_starters', {}))}
+</div>"""
+
+    js = f"""
+// ─── Performance vs Benchmarks ──────────────────────────────────────────────
+(function() {{
+    var RAW_ALL = {perf_json};
+    if (!RAW_ALL || !RAW_ALL.daily || !RAW_ALL.daily.dates || RAW_ALL.daily.dates.length === 0) return;
+
+    // Active dataset — swapped when the period button changes
+    var DATA = RAW_ALL.daily;
+
+    function getDataset() {{
+        if (activePeriod <= 12) return RAW_ALL.daily;
+        if (activePeriod <= 60) return RAW_ALL.weekly;
+        return RAW_ALL.monthly;
+    }}
+
+    var canvas = document.getElementById('perf-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    var bondSlider  = document.getElementById('perf-bond-slider');
+    var bondLbl     = document.getElementById('perf-bond-value');
+    var showSpy     = document.getElementById('perf-show-spy');
+    var showQqq     = document.getElementById('perf-show-qqq');
+    var showBal     = document.getElementById('perf-show-bal');
+    var tooltip     = document.getElementById('perf-tooltip');
+    var periodBtns  = document.querySelectorAll('.perf-period-btn');
+
+    var activePeriod = 12;  // months
+    var bondPct      = 40;
+
+    var COLORS = {{
+        portfolio: '#FF6B6B',
+        SPY:       '#3A7BD5',
+        QQQ:       '#00C49A',
+        balanced:  '#D4A843'
+    }};
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function dateStr(offsetMonths) {{
+        var d = new Date();
+        d.setMonth(d.getMonth() - offsetMonths);
+        return d.toISOString().slice(0, 10);
+    }}
+
+    // Return array of [date, %return] for a series in DATA, normalised to 0%
+    // from windowStart.  Reads from the currently-active resolution dataset.
+    function normalisedSeries(key, windowStart) {{
+        var dates = DATA.dates;
+        var vals  = DATA[key];
+        if (!vals) return [];
+
+        // Find first non-null index >= windowStart
+        var startIdx = -1;
+        for (var i = 0; i < dates.length; i++) {{
+            if (dates[i] >= windowStart && vals[i] !== null) {{
+                startIdx = i;
+                break;
+            }}
+        }}
+        if (startIdx < 0) return [];
+
+        var baseVal = vals[startIdx];
+        if (!baseVal || baseVal === 0) return [];
+
+        var out = [];
+        for (var j = startIdx; j < dates.length; j++) {{
+            if (vals[j] !== null) {{
+                out.push([dates[j], (vals[j] / baseVal - 1) * 100]);
+            }}
+        }}
+        return out;
+    }}
+
+    // Compute balanced portfolio (quarterly third-Friday rebalanced SPY/IEF)
+    function computeBalanced(windowStart, equityFrac) {{
+        var spyVals = DATA.SPY;
+        var iefVals = DATA.IEF;
+        var dates   = DATA.dates;
+        if (!spyVals || !iefVals) return [];
+
+        var bondFrac = 1 - equityFrac;
+
+        // Find aligned start index
+        var startIdx = -1;
+        for (var i = 0; i < dates.length; i++) {{
+            if (dates[i] >= windowStart && spyVals[i] !== null && iefVals[i] !== null) {{
+                startIdx = i;
+                break;
+            }}
+        }}
+        if (startIdx < 0) return [];
+
+        // Compute third Fridays in range
+        function thirdFriday(year, month) {{
+            var count = 0;
+            for (var day = 1; day <= 31; day++) {{
+                var d = new Date(year, month - 1, day);
+                if (d.getMonth() !== month - 1) break;
+                if (d.getDay() === 5) {{ count++; if (count === 3) return d.toISOString().slice(0, 10); }}
+            }}
+            return null;
+        }}
+        var rebalSet = {{}};
+        var startY = parseInt(dates[startIdx].slice(0, 4), 10);
+        var endY   = parseInt(dates[dates.length - 1].slice(0, 4), 10);
+        for (var yr = startY; yr <= endY + 1; yr++) {{
+            [3, 6, 9, 12].forEach(function(mo) {{
+                var tf = thirdFriday(yr, mo);
+                if (tf) rebalSet[tf] = true;
+            }});
+        }}
+
+        // Simulate: portfolio value starts at 1
+        var portVal   = 1.0;
+        var equityVal = equityFrac;   // equity component
+        var bondVal   = bondFrac;     // bond component
+        var prevSpyP  = spyVals[startIdx];
+        var prevIefP  = iefVals[startIdx];
+
+        var out = [[dates[startIdx], 0]];
+
+        for (var k = startIdx + 1; k < dates.length; k++) {{
+            var d  = dates[k];
+            var sp = spyVals[k];
+            var ip = iefVals[k];
+            if (sp === null || ip === null) continue;
+
+            var spyRet = sp / prevSpyP - 1;
+            var iefRet = ip / prevIefP - 1;
+
+            equityVal *= (1 + spyRet);
+            bondVal   *= (1 + iefRet);
+            portVal    = equityVal + bondVal;
+
+            out.push([d, (portVal - 1) * 100]);
+
+            // Rebalance on third Friday
+            if (rebalSet[d]) {{
+                equityVal = portVal * equityFrac;
+                bondVal   = portVal * bondFrac;
+            }}
+
+            prevSpyP = sp;
+            prevIefP = ip;
+        }}
+        return out;
+    }}
+
+    // ── Drawing ───────────────────────────────────────────────────────────────
+    var DPR = window.devicePixelRatio || 1;
+    var PAD = {{ top: 30, right: 30, bottom: 50, left: 72 }};
+
+    function resizeCanvas() {{
+        var W = canvas.parentElement.clientWidth || 1100;
+        canvas.width  = W * DPR;
+        canvas.height = 500 * DPR;
+        canvas.style.width  = W + 'px';
+        canvas.style.height = '500px';
+    }}
+
+    function isLight() {{ return document.body.classList.contains('light-theme'); }}
+
+    function draw() {{
+        var light   = isLight();
+        var bg      = light ? '#FFFFFF' : '#0F1729';
+        var gridClr = light ? '#DDDDDD' : '#1C2A40';
+        var axisClr = light ? '#556677' : '#8899AA';
+        var zeroClr = light ? '#AABBCC' : '#3A5070';
+        var W = canvas.width;
+        var H = canvas.height;
+        var p = {{ top: PAD.top * DPR, right: PAD.right * DPR, bottom: PAD.bottom * DPR, left: PAD.left * DPR }};
+        var cW = W - p.left - p.right;
+        var cH = H - p.top  - p.bottom;
+
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        var ws = dateStr(activePeriod);
+
+        // Build all series for current window
+        var series = [
+            {{ key: 'portfolio', data: normalisedSeries('portfolio', ws), color: COLORS.portfolio, label: _perf_t('perf_line_portfolio', 'Portfolio'), always: true }},
+            {{ key: 'SPY',       data: normalisedSeries('SPY', ws),       color: COLORS.SPY,       label: _perf_t('perf_line_spy', 'S&P 500'),     always: false, show: showSpy  && showSpy.checked }},
+            {{ key: 'QQQ',       data: normalisedSeries('QQQ', ws),       color: COLORS.QQQ,       label: _perf_t('perf_line_qqq', 'NASDAQ 100'),  always: false, show: showQqq  && showQqq.checked }},
+            {{ key: 'balanced',  data: computeBalanced(ws, (100 - bondPct) / 100), color: COLORS.balanced, label: _perf_t('perf_line_balanced', 'Balanced'), always: false, show: showBal && showBal.checked }},
+        ];
+
+        // Gather all points to find x/y ranges
+        var allDates = [];
+        var minY = Infinity, maxY = -Infinity;
+        series.forEach(function(s) {{
+            if (!s.always && !s.show) return;
+            s.data.forEach(function(p) {{
+                allDates.push(p[0]);
+                if (p[1] < minY) minY = p[1];
+                if (p[1] > maxY) maxY = p[1];
+            }});
+        }});
+
+        if (allDates.length === 0) {{
+            ctx.fillStyle = axisClr;
+            ctx.font = (14 * DPR) + 'px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(_perf_t('perf_no_data', 'Insufficient price history'), W / 2, H / 2);
+            return;
+        }}
+
+        allDates.sort();
+        var minDate = allDates[0];
+        var maxDate = allDates[allDates.length - 1];
+
+        // Add padding to y range
+        var yPad = Math.max(5, (maxY - minY) * 0.08);
+        minY -= yPad; maxY += yPad;
+
+        function xPos(dateS) {{
+            var t0 = new Date(minDate).getTime();
+            var t1 = new Date(maxDate).getTime();
+            var t  = new Date(dateS).getTime();
+            if (t1 === t0) return p.left;
+            return p.left + cW * (t - t0) / (t1 - t0);
+        }}
+        function yPos(val) {{
+            return p.top + cH * (1 - (val - minY) / (maxY - minY));
+        }}
+
+        // Grid lines
+        var yTicks = niceYTicks(minY, maxY, 6);
+        ctx.lineWidth = DPR;
+        yTicks.forEach(function(v) {{
+            var y = yPos(v);
+            ctx.strokeStyle = Math.abs(v) < 0.001 ? zeroClr : gridClr;
+            ctx.lineWidth   = Math.abs(v) < 0.001 ? 1.5 * DPR : DPR * 0.7;
+            ctx.beginPath(); ctx.moveTo(p.left, y); ctx.lineTo(p.left + cW, y); ctx.stroke();
+            ctx.fillStyle  = axisClr;
+            ctx.font       = (10 * DPR) + 'px Segoe UI';
+            ctx.textAlign  = 'right';
+            ctx.fillText((v >= 0 ? '+' : '') + v.toFixed(1) + '%', p.left - 6 * DPR, y + 3.5 * DPR);
+        }});
+
+        // X-axis date labels
+        var xLabelDates = niceXDates(minDate, maxDate, Math.floor(cW / (80 * DPR)));
+        ctx.fillStyle = axisClr;
+        ctx.font      = (10 * DPR) + 'px Segoe UI';
+        ctx.textAlign = 'center';
+        xLabelDates.forEach(function(d) {{
+            var x = xPos(d);
+            ctx.fillText(formatXLabel(d, activePeriod), x, p.top + cH + 18 * DPR);
+        }});
+
+        // Draw lines
+        series.forEach(function(s) {{
+            if (!s.always && !s.show) return;
+            if (s.data.length < 2) return;
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth   = 2 * DPR;
+            ctx.lineJoin    = 'round';
+            ctx.beginPath();
+            var started = false;
+            s.data.forEach(function(pt) {{
+                var x = xPos(pt[0]);
+                var y = yPos(pt[1]);
+                if (!started) {{ ctx.moveTo(x, y); started = true; }}
+                else          {{ ctx.lineTo(x, y); }}
+            }});
+            ctx.stroke();
+        }});
+
+        // Store for crosshair use
+        canvas._series   = series;
+        canvas._xPos     = xPos;
+        canvas._yPos     = yPos;
+        canvas._minDate  = minDate;
+        canvas._maxDate  = maxDate;
+        canvas._allDates = allDates;
+        canvas._p        = p;
+        canvas._cW       = cW;
+        canvas._cH       = cH;
+        canvas._W        = W;
+        canvas._H        = H;
+        canvas._minY     = minY;
+        canvas._maxY     = maxY;
+        canvas._light    = light;
+        canvas._axisClr  = axisClr;
+    }}
+
+    // ── Axis helpers ─────────────────────────────────────────────────────────
+    function niceYTicks(mn, mx, n) {{
+        var range = mx - mn;
+        var step  = Math.pow(10, Math.floor(Math.log10(range / n)));
+        var nice  = [1, 2, 5, 10];
+        for (var i = 0; i < nice.length; i++) {{
+            if (range / (nice[i] * step) <= n) {{ step = nice[i] * step; break; }}
+        }}
+        var ticks = [];
+        var start = Math.ceil(mn / step) * step;
+        for (var v = start; v <= mx + 1e-9; v += step) {{
+            ticks.push(parseFloat(v.toFixed(6)));
+        }}
+        return ticks;
+    }}
+
+    function niceXDates(minD, maxD, count) {{
+        var t0  = new Date(minD).getTime();
+        var t1  = new Date(maxD).getTime();
+        var out = [];
+        for (var i = 0; i <= count; i++) {{
+            var t = t0 + (t1 - t0) * i / count;
+            out.push(new Date(t).toISOString().slice(0, 10));
+        }}
+        return out;
+    }}
+
+    function formatXLabel(dateS, period) {{
+        var d = new Date(dateS);
+        if (period <= 6) {{
+            return d.toLocaleDateString('en', {{ month: 'short', day: 'numeric' }});
+        }} else if (period <= 12) {{
+            return d.toLocaleDateString('en', {{ month: 'short', year: '2-digit' }});
+        }} else {{
+            return d.toLocaleDateString('en', {{ month: 'short', year: 'numeric' }});
+        }}
+    }}
+
+    // ── Crosshair ─────────────────────────────────────────────────────────────
+    canvas.addEventListener('mousemove', function(evt) {{
+        if (!canvas._series) return;
+        var rect = canvas.getBoundingClientRect();
+        var mx   = (evt.clientX - rect.left) * DPR;
+        var my   = (evt.clientY - rect.top)  * DPR;
+        var p    = canvas._p;
+        var cW   = canvas._cW;
+        var cH   = canvas._cH;
+        if (mx < p.left || mx > p.left + cW || my < p.top || my > p.top + cH) {{
+            tooltip.style.display = 'none';
+            draw();
+            return;
+        }}
+
+        // Find nearest date
+        var t0 = new Date(canvas._minDate).getTime();
+        var t1 = new Date(canvas._maxDate).getTime();
+        var frac = (mx - p.left) / cW;
+        var tHov = t0 + frac * (t1 - t0);
+        var hovDate = canvas._allDates.reduce(function(best, d) {{
+            return Math.abs(new Date(d).getTime() - tHov) < Math.abs(new Date(best).getTime() - tHov) ? d : best;
+        }});
+
+        // Redraw with crosshair
+        draw();
+        var xC = canvas._xPos(hovDate);
+        ctx.save();
+        ctx.strokeStyle = canvas._light ? '#AABBCC' : '#4A6080';
+        ctx.lineWidth   = DPR;
+        ctx.setLineDash([4 * DPR, 4 * DPR]);
+        ctx.beginPath(); ctx.moveTo(xC, p.top); ctx.lineTo(xC, p.top + cH); ctx.stroke();
+        ctx.restore();
+
+        // Build tooltip
+        var htmlLines = ['<b>' + hovDate + '</b>'];
+        canvas._series.forEach(function(s) {{
+            if (!s.always && !s.show) return;
+            var pt = s.data.find(function(x) {{ return x[0] === hovDate; }});
+            var val = pt ? pt[1] : null;
+            // if exact date missing, find nearest
+            if (val === null && s.data.length > 0) {{
+                var best = s.data.reduce(function(b, x) {{
+                    return Math.abs(new Date(x[0]).getTime() - new Date(hovDate).getTime()) <
+                           Math.abs(new Date(b[0]).getTime() - new Date(hovDate).getTime()) ? x : b;
+                }});
+                if (Math.abs(new Date(best[0]).getTime() - new Date(hovDate).getTime()) < 4 * 86400000) {{
+                    val = best[1];
+                }}
+            }}
+            var sign = (val === null) ? '' : (val >= 0 ? '+' : '');
+            var str  = (val === null) ? 'N/A' : sign + val.toFixed(2) + '%';
+            htmlLines.push('<span class="perf-tooltip-dot" style="background:' + s.color + '"></span>' + s.label + ': <b>' + str + '</b>');
+        }});
+        tooltip.innerHTML = htmlLines.join('<br>');
+
+        // Position tooltip
+        var tipW = 220;
+        var left = evt.clientX - rect.left + 12;
+        if (left + tipW > rect.width - 10) left = evt.clientX - rect.left - tipW - 12;
+        tooltip.style.left    = left + 'px';
+        tooltip.style.top     = (evt.clientY - rect.top - 10) + 'px';
+        tooltip.style.display = 'block';
+    }});
+
+    canvas.addEventListener('mouseleave', function() {{
+        tooltip.style.display = 'none';
+    }});
+
+    // ── i18n helper ──────────────────────────────────────────────────────────
+    function _perf_t(key, fallback) {{
+        try {{
+            var T = (function(){{var s=document.querySelector('[data-i18n="nav_performance"]');return s?null:null;}})();
+            var lang = localStorage.getItem('portfolio_language') || 'en';
+            var map = {{ 'perf_line_portfolio': {{'en':'Portfolio','zh':'投資組合'}},
+                         'perf_line_spy':       {{'en':'S&P 500','zh':'標普500'}},
+                         'perf_line_qqq':       {{'en':'NASDAQ 100','zh':'納斯達克100'}},
+                         'perf_line_balanced':  {{'en':'Balanced','zh':'平衡組合'}},
+                         'perf_no_data':        {{'en':'Insufficient price history to compute performance comparison.','zh':'價格歷史資料不足，無法計算表現對比。'}} }};
+            if (map[key]) return map[key][lang.startsWith('zh') ? 'zh' : 'en'] || fallback;
+        }} catch(e) {{}}
+        return fallback;
+    }}
+
+    // ── Event wiring ─────────────────────────────────────────────────────────
+    periodBtns.forEach(function(btn) {{
+        btn.addEventListener('click', function() {{
+            periodBtns.forEach(function(b) {{ b.classList.remove('active'); }});
+            btn.classList.add('active');
+            activePeriod = parseInt(btn.getAttribute('data-period'), 10);
+            DATA = getDataset();
+            draw();
+        }});
+    }});
+
+    if (bondSlider) {{
+        bondSlider.addEventListener('input', function() {{
+            bondPct = parseInt(bondSlider.value, 10);
+            if (bondLbl) bondLbl.textContent = bondPct;
+            draw();
+        }});
+    }}
+
+    [showSpy, showQqq, showBal].forEach(function(cb) {{
+        if (cb) cb.addEventListener('change', draw);
+    }});
+
+    // Redraw on theme/language change
+    window.__rrgRedraws = window.__rrgRedraws || [];
+    window.__rrgRedraws.push(draw);
+
+    window.addEventListener('resize', function() {{
+        resizeCanvas();
+        draw();
+    }});
+
+    resizeCanvas();
+    draw();
+}})();
+"""
+    return page_html, js
+
+
 def generate_single_html(
     portfolio_value, metrics, num_positions, num_options,
     portfolio_df, opts_df, fund_df,
@@ -2524,6 +3250,7 @@ def generate_single_html(
     corr_matrix, individual_risk_df,
     stress_df, beta_val,
     rrg_data=None,
+    perf_data=None,
     usd_cad_rate=1.37,
 ):
     """Assemble all sections into a single HTML file with tab navigation."""
@@ -2543,6 +3270,7 @@ def generate_single_html(
     exposure_html = _generate_exposure_section(
         portfolio_df, opts_df, portfolio_value, usd_cad_rate)
     rotation_html, _dashboard_rrg_unused, rotation_js = _generate_rotation_section(rrg_data)
+    performance_html, performance_js = _generate_performance_section(perf_data or {})
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -2582,6 +3310,7 @@ def generate_single_html(
 {stress_html}
 {exposure_html}
 {rotation_html}
+{performance_html}
 <div id="cell-tooltip"></div>
 
 <script>
@@ -2716,6 +3445,9 @@ document.addEventListener('DOMContentLoaded', function() {{
 
 // ─── Sector Rotation (RRG) ──────────────────────────────────────────────────
 {rotation_js}
+
+// ─── Performance vs Benchmarks ──────────────────────────────────────────────
+{performance_js}
 </script>
 </body>
 </html>"""
@@ -2769,7 +3501,7 @@ def main():
     print(f"  Net delta (CAD): ${total_delta_usd * usd_cad_rate:+,.0f}")
 
     # 7. Fetch price history
-    prices = fetch_price_history(all_tickers)
+    prices, ticker_first_dates = fetch_price_history(all_tickers)
     if prices.empty:
         print("ERROR: Could not fetch price data. Exiting.")
         sys.exit(1)
@@ -2878,6 +3610,12 @@ def main():
     print(f"  RRG: {len(rrg_data.get('tickers', []))} tickers, "
           f"{len(rrg_data.get('dates', []))} weekly points")
 
+    # 13c. Performance vs benchmarks data
+    # Build late-starters dict: tickers with non-zero weight that lack full history
+    late_starters = {t: ticker_first_dates[t] for t in ticker_first_dates
+                     if t in weight_series.index and weight_series[t] != 0}
+    perf_data = compute_performance_data(portfolio_returns, late_starters, weight_series=weight_series)
+
     # 14. Generate single HTML report
     print("\nGenerating single-page HTML report...")
     html = generate_single_html(
@@ -2895,6 +3633,7 @@ def main():
         stress_df=stress_df,
         beta_val=beta_val,
         rrg_data=rrg_data,
+        perf_data=perf_data,
         usd_cad_rate=usd_cad_rate,
     )
 
