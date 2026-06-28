@@ -1089,6 +1089,7 @@ COMBINED_CSS = """
     .perf-footnote-item { display: inline-block; background: #1C2541; border: 1px solid #2A3F5F; border-radius: 3px; padding: 1px 7px; margin: 2px 4px; color: #D0D8E8; }
     body.light-theme .perf-footnote-item { background: #E8EDF5; border-color: #C5CEDC; color: #1C2541; }
     .perf-footnote-tail { color: #6677AA; font-style: italic; }
+    .perf-footnote-row  { display: block; margin-top: 5px; color: #6677AA; font-style: italic; }
 """
 
 TAB_PAGES = [
@@ -1331,6 +1332,7 @@ TRANSLATIONS = {
     "perf_footnote_label": {"en": "Portfolio note:", "zh": "投資組合備註："},
     "perf_footnote_avail": {"en": "available from", "zh": "數據起始日"},
     "perf_footnote_tail": {"en": "\u2014 treated as cash (0% return) before each ticker\u2019s first trading date.", "zh": "\u2014 各代碼上市前以現金（0%回報）計算。"},
+    "perf_footnote_options": {"en": "Options: delta-equivalent underlying exposure included at current delta. Option premium, time value and gamma effects are not modelled.", "zh": "期權：已按當前高昨納入等値正股曝露。期權標面値、時間値及 Gamma 效應均未建模。"},
     "perf_period_1m":  {"en": "1M",  "zh": "1個月"},
     "perf_period_3m":  {"en": "3M",  "zh": "3個月"},
     "perf_period_6m":  {"en": "6M",  "zh": "6個月"},
@@ -2742,18 +2744,23 @@ document.addEventListener('DOMContentLoaded', function() {{
 
 
 def _perf_footnote_html(late_starters):
-    """Return a footnote box listing tickers that lack full price history."""
-    if not late_starters:
-        return ""
-    items = "".join(
+    """Return a footnote box with any late-starting tickers, then the options caveat."""
+    late_items = "".join(
         f'<span class="perf-footnote-item"><b>{t}</b> <span data-i18n="perf_footnote_avail">available from</span> {d}</span>'
         for t, d in sorted(late_starters.items(), key=lambda x: x[1])
-    )
+    ) if late_starters else ""
+    late_line = (
+        f'{late_items}'
+        '<span class="perf-footnote-tail" data-i18n="perf_footnote_tail">'
+        ' &#8212; treated as cash (0% return) before each ticker&#8217;s first trading date.</span>'
+    ) if late_items else ""
     return (
         '<div class="perf-footnote">'
         '<span class="perf-footnote-label" data-i18n="perf_footnote_label">Portfolio note:</span> '
-        f'{items}'
-        '<span class="perf-footnote-tail" data-i18n="perf_footnote_tail"> &#8212; treated as cash (0% return) before each ticker&#8217;s first trading date.</span>'
+        f'{late_line}'
+        '<div class="perf-footnote-row" data-i18n="perf_footnote_options">'
+        'Options: delta-equivalent underlying exposure included at current delta. '
+        'Option premium, time value and gamma effects are not modelled.</div>'
         '</div>'
     )
 
