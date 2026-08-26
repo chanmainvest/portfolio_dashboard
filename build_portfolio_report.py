@@ -8,12 +8,17 @@ fetches market data, and generates HTML reports:
 - Stress Testing (includes option hedging impact)
 - Sector & Currency Exposure
 - Options (dedicated page with delta exposure)
+
+Downloaded yfinance data (price history, fundamentals, option quotes) is
+cached in market_data_cache.db (SQLite) so rebuilds only fetch new data.
 """
 
+import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
@@ -22,11 +27,229 @@ from scipy import stats
 from opencc import OpenCC
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
-PORTFOLIO_FILE = Path(__file__).parent / "sample_portfolio.xlsx"
-OUTPUT_DIR = Path(__file__).parent
+DEFAULT_PORTFOLIO_FILE = Path(__file__).parent / "sample_portfolio.xlsx"
+DEFAULT_OUTPUT_FILE = Path(__file__).parent / "index.html"
 RISK_FREE_RATE = 0.043  # ~4.3% US T-bill rate
 TRADING_DAYS = 252
 LOOKBACK_DAYS = 365  # 1 year of history for analytics
+
+# ─── SQLite market-data cache ──────────────────────────────────────────────────
+# Downloaded yfinance data is cached in a local SQLite database so rebuilds
+# only fetch the incremental delta from Yahoo Finance. Delete the file to
+# force a full refetch.
+CACHE_DB_PATH = Path(__file__).parent / "market_data_cache.db"
+FUNDAMENTALS_TTL_HOURS = 24 * 7  # sector/industry/beta refresh weekly
+OPTION_QUOTE_TTL_HOURS = 4       # option premiums refresh every 4 hours
+
+_DB_CONN = None
+
+
+def _get_db():
+    """Lazily open the cache database and ensure its schema exists."""
+    global _DB_CONN
+    if _DB_CONN is None:
+        _DB_CONN = sqlite3.connect(CACHE_DB_PATH)
+        _DB_CONN.execute(
+            """CREATE TABLE IF NOT EXISTS price_history (
+                   interval TEXT NOT NULL,
+                   ticker   TEXT NOT NULL,
+                   date     TEXT NOT NULL,
+                   close    REAL,
+                   PRIMARY KEY (interval, ticker, date)
+               )"""
+        )
+        _DB_CONN.execute(
+            """CREATE TABLE IF NOT EXISTS price_fetch_log (
+                   interval      TEXT NOT NULL,
+                   ticker        TEXT NOT NULL,
+                   covered_since TEXT NOT NULL,
+                   updated_at    TEXT NOT NULL,
+                   PRIMARY KEY (interval, ticker)
+               )"""
+        )
+        _DB_CONN.execute(
+            """CREATE TABLE IF NOT EXISTS fundamentals (
+                   symbol      TEXT PRIMARY KEY,
+                   quote_type  TEXT,
+                   beta        REAL,
+                   pe          REAL,
+                   industry    TEXT,
+                   sector      TEXT,
+                   fetched_at  TEXT NOT NULL
+               )"""
+        )
+        _DB_CONN.execute(
+            """CREATE TABLE IF NOT EXISTS option_quotes (
+                   yahoo_symbol TEXT NOT NULL,
+                   expiry       TEXT NOT NULL,
+                   opt_type     TEXT NOT NULL,
+                   strike       REAL NOT NULL,
+                   bid          REAL,
+                   ask          REAL,
+                   last         REAL,
+                   fetched_at   TEXT NOT NULL,
+                   PRIMARY KEY (yahoo_symbol, expiry, opt_type, strike)
+               )"""
+        )
+        _DB_CONN.commit()
+    return _DB_CONN
+
+
+def _last_trading_date(now):
+    """Most recent date that plausibly has a trading bar (skips weekends)."""
+    d = now.date()
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
+def _detect_late_starters(prices):
+    """Map tickers whose first real bar is > 7 days after the window open.
+
+    Only flags tickers that are genuinely late-starting — this avoids
+    spurious hits from single-day holiday gaps (e.g. Canadian Victoria Day
+    causing TSX-listed stocks to appear "late").
+    """
+    if prices.empty:
+        return {}
+    window_start_dt = prices.index[0].to_pydatetime().replace(tzinfo=None)
+    first_dates = {}
+    for col in prices.columns:
+        first_valid = prices[col].first_valid_index()
+        if first_valid is not None:
+            fv_dt = first_valid.to_pydatetime().replace(tzinfo=None)
+            if (fv_dt - window_start_dt).days > 7:
+                first_dates[col] = first_valid.strftime("%Y-%m-%d")
+    return first_dates
+
+
+def cached_price_fetch(tickers, interval, period_days):
+    """Return a wide Close-price DataFrame (index=date, columns=tickers).
+
+    Serves data from the SQLite cache and only downloads the incremental
+    delta from Yahoo Finance (bars at or after each ticker's last cached
+    date). Returns unfilled data (NaNs preserved) so callers can detect
+    late-starting tickers before forward/back filling.
+    """
+    tickers = [t for t in tickers if t]
+    if not tickers:
+        return pd.DataFrame()
+    yahoo_map = {t: get_yahoo_ticker(t) for t in tickers}
+    yahoo_tickers = sorted(set(yahoo_map.values()))
+    end_date = datetime.now()
+    window_start = end_date - timedelta(days=period_days)
+    db = _get_db()
+
+    # Per-ticker cached coverage: last bar date, plus the earliest window
+    # start we have already queried (price_fetch_log). The log prevents
+    # refetching history Yahoo simply doesn't have (e.g. recent IPOs inside
+    # a long lookback window).
+    last_cached = {}
+    covered_since = {}
+    for yt in yahoo_tickers:
+        row = db.execute(
+            "SELECT MAX(date) FROM price_history WHERE interval = ? AND ticker = ?",
+            (interval, yt),
+        ).fetchone()
+        last_cached[yt] = row[0] if row and row[0] else None
+        row = db.execute(
+            "SELECT MIN(covered_since) FROM price_fetch_log WHERE interval = ? AND ticker = ?",
+            (interval, yt),
+        ).fetchone()
+        covered_since[yt] = row[0] if row and row[0] else None
+
+    # A ticker needs downloading when it is missing recent bars OR its cached
+    # history doesn't cover the requested window start.
+    # ISO date strings compare lexicographically == chronologically.
+    window_start_str = window_start.strftime("%Y-%m-%d")
+    fresh_date = _last_trading_date(end_date).strftime("%Y-%m-%d")
+
+    def _under_covered(yt):
+        return covered_since[yt] is None or covered_since[yt] > window_start_str
+
+    stale = [
+        yt for yt in yahoo_tickers
+        if last_cached[yt] is None or last_cached[yt] < fresh_date or _under_covered(yt)
+    ]
+
+    if stale:
+        # If any stale ticker lacks window coverage the download must span
+        # the full window; otherwise fetch incrementally from the oldest
+        # last-cached date among stale tickers.
+        needs_backfill = any(_under_covered(yt) for yt in stale)
+        starts = [last_cached[yt] for yt in stale if last_cached[yt]]
+        if starts and not needs_backfill:
+            start = min(starts)
+        else:
+            start = window_start_str
+        print(f"  Fetching {len(stale)}/{len(yahoo_tickers)} tickers ({interval}) since {start}; rest from cache")
+        try:
+            raw = yf.download(
+                stale,
+                start=start,
+                end=end_date.strftime("%Y-%m-%d"),
+                interval=interval,
+                auto_adjust=True,
+                progress=False,
+            )
+        except Exception as exc:
+            print(f"  WARNING: {interval} price download failed: {exc}")
+            raw = pd.DataFrame()
+        if not raw.empty:
+            if isinstance(raw.columns, pd.MultiIndex):
+                close = raw["Close"]
+            else:
+                close = raw[["Close"]].copy()
+                close.columns = [stale[0]]
+            now_iso = datetime.now(timezone.utc).isoformat()
+            records = []
+            fetch_log = []
+            for yt in close.columns:
+                if yt not in last_cached:
+                    continue  # unexpected column from the download
+                series = close[yt].dropna()
+                for dt, val in series.items():
+                    records.append(
+                        (interval, yt, pd.Timestamp(dt).normalize().strftime("%Y-%m-%d"), float(val))
+                    )
+                # We queried back to `start` for this ticker; keep the
+                # earliest window ever covered per ticker
+                fetch_log.append((interval, yt, start, now_iso))
+            if records:
+                db.executemany(
+                    "INSERT OR REPLACE INTO price_history (interval, ticker, date, close) VALUES (?, ?, ?, ?)",
+                    records,
+                )
+            if fetch_log:
+                db.executemany(
+                    """INSERT INTO price_fetch_log (interval, ticker, covered_since, updated_at)
+                       VALUES (?, ?, ?, ?)
+                       ON CONFLICT(interval, ticker) DO UPDATE SET
+                         covered_since = MIN(price_fetch_log.covered_since, excluded.covered_since),
+                         updated_at = excluded.updated_at""",
+                    fetch_log,
+                )
+            db.commit()
+    else:
+        print(f"  All {len(yahoo_tickers)} tickers ({interval}) up to date in cache")
+
+    # Read the requested window back from the cache
+    long_df = pd.read_sql_query(
+        "SELECT ticker, date, close FROM price_history WHERE interval = ? AND date >= ? ORDER BY date",
+        db,
+        params=(interval, window_start.strftime("%Y-%m-%d")),
+    )
+    if long_df.empty:
+        return pd.DataFrame()
+    prices = long_df.pivot(index="date", columns="ticker", values="close")
+    prices.index = pd.to_datetime(prices.index)
+    prices = prices.sort_index().dropna(axis=1, how="all")
+
+    # Rename Yahoo symbols back to local symbols, keep the requested order
+    reverse_map = {v: k for k, v in yahoo_map.items()}
+    prices = prices.rename(columns=lambda c: reverse_map.get(c, c))
+    prices = prices.reindex(columns=[t for t in tickers if t in prices.columns])
+    return prices
 
 # ─── Ticker mapping for Canadian tickers on Yahoo Finance ────────────────────
 YAHOO_TICKER_MAP = {
@@ -36,6 +259,33 @@ YAHOO_TICKER_MAP = {
     "CCO": "CCO.TO",
     "TRI": "TRI.TO",
 }
+
+# Symbols that must NEVER be sent to Yahoo Finance: cash rows, mutual-fund
+# placeholder rows (kept at their spreadsheet price and excluded from all
+# market analytics — correlation, risk, stress, rotation), and symbols Yahoo
+# resolves to an unrelated security (e.g. "EU" is a CAD penny stock in the
+# workbook but a US equity on Yahoo).
+NON_YAHOO_SYMBOLS = {"Cash", "Short Cash", "Mutual Fund", "RBF607", "EU", "EMPR", "GIGA"}
+
+# Per-workbook overrides (CAD-priced positions → TSX listings), set in main()
+_TICKER_OVERRIDES = {}
+
+
+def set_ticker_overrides(overrides):
+    """Set per-workbook local-symbol → Yahoo-symbol mappings."""
+    _TICKER_OVERRIDES.clear()
+    _TICKER_OVERRIDES.update(overrides)
+
+
+def tsx_yahoo_symbol(sym):
+    """Yahoo symbol for a TSX listing: class suffix becomes a dash, + '.TO'.
+
+    e.g. TECK.B → TECK-B.TO, BEI.UN → BEI-UN.TO, SU → SU.TO
+    """
+    if "." in sym:
+        base, sfx = sym.rsplit(".", 1)
+        return f"{base}-{sfx}.TO"
+    return f"{sym}.TO"
 
 # ─── Risk metric descriptions for tooltips ──────────────────────────────────
 METRIC_TOOLTIPS = {
@@ -75,9 +325,14 @@ def read_portfolio(filepath):
     df = df[df["Mkt Value (CAD)"].notna()]
 
     cash_symbols = {"Cash", "Short Cash"}
+    mutual_fund_symbols = {"Mutual Fund"}
     df["PositionType"] = "Stock/ETF"
     df.loc[df["Symbol"].isin(cash_symbols), "PositionType"] = "Cash"
+    df.loc[df["Symbol"].isin(mutual_fund_symbols), "PositionType"] = "Mutual Fund"
     df["Sector"] = ""
+    # Label the fund's sector so exposure analysis shows a distinct
+    # "Mutual Fund" slice instead of lumping it into the blank cash bucket
+    df.loc[df["PositionType"] == "Mutual Fund", "Sector"] = "Mutual Fund"
 
     # ── Read USD/CAD rate from Currency sheet ──
     usd_cad_rate = 1.37
@@ -103,10 +358,29 @@ def read_portfolio(filepath):
 
 
 def fetch_fundamentals(tickers):
-    """Fetch sector, industry, beta, P/E, and type from Yahoo Finance."""
+    """Fetch sector, industry, beta, P/E, and type from Yahoo Finance (cached)."""
     print(f"Fetching fundamentals for {len(tickers)} tickers...")
+    db = _get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=FUNDAMENTALS_TTL_HOURS)).isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
     rows = []
+    cached_count = 0
     for symbol in tickers:
+        rec = db.execute(
+            "SELECT quote_type, beta, pe, industry, sector FROM fundamentals WHERE symbol = ? AND fetched_at >= ?",
+            (symbol, cutoff),
+        ).fetchone()
+        if rec is not None:
+            rows.append({
+                "Symbol": symbol,
+                "Type": rec[0] or "",
+                "Beta": rec[1],
+                "P/E": rec[2],
+                "Industry": rec[3] or "",
+                "Sector": rec[4] or "",
+            })
+            cached_count += 1
+            continue
         yahoo_sym = get_yahoo_ticker(symbol)
         try:
             info = yf.Ticker(yahoo_sym).info
@@ -118,30 +392,45 @@ def fetch_fundamentals(tickers):
                 "Industry": info.get("industry", info.get("category", "")),
                 "Sector": info.get("sector", info.get("category", "")),
             })
+            db.execute(
+                "INSERT OR REPLACE INTO fundamentals (symbol, quote_type, beta, pe, industry, sector, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (symbol, rows[-1]["Type"], rows[-1]["Beta"], rows[-1]["P/E"],
+                 rows[-1]["Industry"], rows[-1]["Sector"], now_iso),
+            )
+            db.commit()
             print(f"    {symbol}: {rows[-1]['Sector']} / {rows[-1]['Industry']} / beta={rows[-1]['Beta']}")
         except Exception as e:
             print(f"    {symbol}: failed ({e})")
             rows.append({"Symbol": symbol, "Type": "", "Beta": None, "P/E": None, "Industry": "", "Sector": ""})
+    fetched_count = len(tickers) - cached_count
+    print(f"  Fundamentals: {cached_count} served from cache, {fetched_count} fetched")
     return pd.DataFrame(rows)
 
 
 def get_yahoo_ticker(symbol):
     """Map local symbol to Yahoo Finance ticker."""
+    if symbol in _TICKER_OVERRIDES:
+        return _TICKER_OVERRIDES[symbol]
     return YAHOO_TICKER_MAP.get(symbol, symbol)
 
 
 def fetch_option_prices(opts_df):
-    """Fetch live option premiums from yfinance option chains.
+    """Fetch live option premiums from yfinance option chains (cached 4h).
 
     Returns a list of option mid-prices aligned to opts_df rows.
     Falls back to intrinsic value when the contract can't be found.
     """
     print("Fetching live option prices...")
     prices = []
-    cache = {}
+    chain_cache = {}
+    db = _get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=OPTION_QUOTE_TTL_HOURS)).isoformat()
     for _, row in opts_df.iterrows():
         symbol = row["Symbol"]
-        yahoo_sym = get_yahoo_ticker(symbol)
+        # Option chains are always fetched from the plain US-listed symbol —
+        # spreadsheet options are US-listed contracts even when the
+        # underlying position itself maps to a TSX ticker (e.g. NTR).
+        chain_sym = symbol
         strike = row.get("Strike", 0)
         opt_type = row.get("Type", "")
         expiry = row.get("Expiry", None)
@@ -152,18 +441,35 @@ def fetch_option_prices(opts_df):
             continue
 
         expiry_str = pd.Timestamp(expiry).strftime("%Y-%m-%d")
-        cache_key = (yahoo_sym, expiry_str)
+        opt_type_norm = str(opt_type).upper()
+
+        # 1. SQLite quote cache (fresh within TTL)
+        rec = db.execute(
+            "SELECT bid, ask, last FROM option_quotes WHERE yahoo_symbol = ? AND expiry = ? AND opt_type = ? AND strike = ? AND fetched_at >= ?",
+            (chain_sym, expiry_str, opt_type_norm, float(strike), cutoff),
+        ).fetchone()
+        if rec is not None:
+            bid, ask, last = rec
+            mid = (bid + ask) / 2 if bid and ask and bid > 0 and ask > 0 else last
+            if mid is None or pd.isna(mid):
+                mid = 0.0
+            prices.append(float(mid))
+            print(f"    {symbol} {opt_type} {strike} {expiry_str}: ${mid:.2f} (cached)")
+            continue
+
+        # 2. In-memory chain cache + yfinance
+        cache_key = (chain_sym, expiry_str)
 
         try:
-            if cache_key not in cache:
-                tk = yf.Ticker(yahoo_sym)
+            if cache_key not in chain_cache:
+                tk = yf.Ticker(chain_sym)
                 chain = tk.option_chain(expiry_str)
-                cache[cache_key] = chain
-            chain = cache[cache_key]
+                chain_cache[cache_key] = chain
+            chain = chain_cache[cache_key]
 
-            if opt_type == "CALL":
+            if opt_type_norm == "CALL":
                 df_chain = chain.calls
-            elif opt_type == "PUT":
+            elif opt_type_norm == "PUT":
                 df_chain = chain.puts
             else:
                 prices.append(0.0)
@@ -176,13 +482,22 @@ def fetch_option_prices(opts_df):
                 last = match["lastPrice"].values[0]
                 mid = (bid + ask) / 2 if bid > 0 and ask > 0 else last
                 prices.append(float(mid) if not pd.isna(mid) else 0.0)
+                db.execute(
+                    "INSERT OR REPLACE INTO option_quotes (yahoo_symbol, expiry, opt_type, strike, bid, ask, last, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (chain_sym, expiry_str, opt_type_norm, float(strike),
+                     float(bid) if pd.notna(bid) else None,
+                     float(ask) if pd.notna(ask) else None,
+                     float(last) if pd.notna(last) else None,
+                     datetime.now(timezone.utc).isoformat()),
+                )
+                db.commit()
                 print(f"    {symbol} {opt_type} {strike} {expiry_str}: ${mid:.2f}")
             else:
-                intrinsic = max(0, ul_price - strike) if opt_type == "CALL" else max(0, strike - ul_price)
+                intrinsic = max(0, ul_price - strike) if opt_type_norm == "CALL" else max(0, strike - ul_price)
                 prices.append(float(intrinsic))
                 print(f"    {symbol} {opt_type} {strike} {expiry_str}: intrinsic ${intrinsic:.2f} (no chain match)")
         except Exception as e:
-            intrinsic = max(0, ul_price - strike) if opt_type == "CALL" else max(0, strike - ul_price)
+            intrinsic = max(0, ul_price - strike) if opt_type_norm == "CALL" else max(0, strike - ul_price)
             prices.append(float(intrinsic))
             print(f"    {symbol} {opt_type} {strike} {expiry_str}: intrinsic ${intrinsic:.2f} ({e})")
 
@@ -190,57 +505,20 @@ def fetch_option_prices(opts_df):
 
 
 def fetch_price_history(tickers, period_days=LOOKBACK_DAYS):
-    """Fetch daily closing prices for all tickers."""
-    yahoo_tickers = [get_yahoo_ticker(t) for t in tickers]
+    """Fetch daily closing prices for all tickers (SQLite-cached, incremental)."""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=period_days)
 
-    print(f"Fetching price history for {len(yahoo_tickers)} tickers...")
+    print(f"Fetching price history for {len(tickers)} tickers...")
     print(f"  Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
-    # Download in bulk
-    data = yf.download(
-        yahoo_tickers,
-        start=start_date.strftime("%Y-%m-%d"),
-        end=end_date.strftime("%Y-%m-%d"),
-        auto_adjust=True,
-        progress=False,
-    )
-
-    if data.empty:
+    prices = cached_price_fetch(tickers, "1d", period_days)
+    if prices.empty:
         print("  WARNING: No data returned from Yahoo Finance!")
-        return pd.DataFrame()
+        return pd.DataFrame(), {}
 
-    # Extract Close prices
-    if isinstance(data.columns, pd.MultiIndex):
-        prices = data["Close"]
-    else:
-        prices = data[["Close"]].copy()
-        prices.columns = yahoo_tickers
-
-    # Rename columns back to original symbols
-    reverse_map = {v: k for k, v in YAHOO_TICKER_MAP.items()}
-    rename_map = {}
-    for col in prices.columns:
-        if col in reverse_map:
-            rename_map[col] = reverse_map[col]
-    prices = prices.rename(columns=rename_map)
-
-    # Drop columns that are all NaN
-    prices = prices.dropna(axis=1, how="all")
-
-    # Record the first date with real data for each ticker (before filling).
-    # Only flag tickers that are genuinely late-starting (> 7 calendar days after
-    # the window open) — this avoids spurious hits from single-day holiday gaps
-    # (e.g. Canadian Victoria Day causing TSX-listed stocks to appear "late").
-    window_start_dt = prices.index[0].to_pydatetime().replace(tzinfo=None)
-    first_dates = {}
-    for col in prices.columns:
-        first_valid = prices[col].first_valid_index()
-        if first_valid is not None:
-            fv_dt = first_valid.to_pydatetime().replace(tzinfo=None)
-            if (fv_dt - window_start_dt).days > 7:
-                first_dates[col] = first_valid.strftime("%Y-%m-%d")
+    # Record first dates with real data BEFORE filling (see _detect_late_starters)
+    first_dates = _detect_late_starters(prices)
 
     # Forward fill then back fill
     prices = prices.ffill().bfill()
@@ -673,22 +951,13 @@ def compute_performance_data(portfolio_returns, late_starters=None, weight_serie
         "late_starters" – tickers with limited history
     """
     bench_tickers = ["SPY", "QQQ", "IEF"]
-    end_date = datetime.now()
 
     # ── shared helper ────────────────────────────────────────────────────────
     def _fetch_bench(interval, days_back):
-        start = (end_date - timedelta(days=days_back)).strftime("%Y-%m-%d")
         try:
-            raw = yf.download(
-                bench_tickers, start=start,
-                end=end_date.strftime("%Y-%m-%d"),
-                interval=interval, auto_adjust=True, progress=False,
-            )
-            if raw.empty:
+            bp = cached_price_fetch(bench_tickers, interval, days_back)
+            if bp.empty:
                 return pd.DataFrame()
-            bp = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw[["Close"]]
-            if isinstance(bp, pd.Series):
-                bp = bp.to_frame(name=bench_tickers[0])
             bp.index = pd.DatetimeIndex(bp.index).normalize()
             return bp.ffill().bfill()
         except Exception as exc:
@@ -696,7 +965,7 @@ def compute_performance_data(portfolio_returns, late_starters=None, weight_serie
             return pd.DataFrame()
 
     def _fetch_portfolio_prices(interval, days_back):
-        """Download extended price history for all portfolio holdings.
+        """Load extended price history for all portfolio holdings (cached).
         Returns (filled_prices_df, first_dates_dict) where first_dates_dict maps
         ticker → first-available-date (captured before ffill/bfill)."""
         if weight_series is None:
@@ -704,30 +973,13 @@ def compute_performance_data(portfolio_returns, late_starters=None, weight_serie
         port_tickers_orig = [t for t in weight_series.index if weight_series.get(t, 0) != 0]
         if not port_tickers_orig:
             return pd.DataFrame(), {}
-        yahoo_map = {t: get_yahoo_ticker(t) for t in port_tickers_orig}
-        reverse_map = {v: k for k, v in yahoo_map.items()}
-        yahoo_tickers = list(yahoo_map.values())
-        start = (end_date - timedelta(days=days_back)).strftime("%Y-%m-%d")
         try:
-            raw = yf.download(yahoo_tickers, start=start,
-                              end=end_date.strftime("%Y-%m-%d"),
-                              interval=interval, auto_adjust=True, progress=False)
-            if raw.empty:
+            pp = cached_price_fetch(port_tickers_orig, interval, days_back)
+            if pp.empty:
                 return pd.DataFrame(), {}
-            pp = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw[["Close"]]
-            if isinstance(pp, pd.Series):
-                pp = pp.to_frame(name=yahoo_tickers[0])
-            pp = pp.rename(columns=lambda c: reverse_map.get(c, c))
             pp.index = pd.DatetimeIndex(pp.index).normalize()
             # Capture first-valid dates BEFORE filling
-            window_start_dt = pp.index[0].to_pydatetime().replace(tzinfo=None)
-            first_dates = {}
-            for col in pp.columns:
-                fvi = pp[col].first_valid_index()
-                if fvi is not None:
-                    fv_dt = fvi.to_pydatetime().replace(tzinfo=None)
-                    if (fv_dt - window_start_dt).days > 7:
-                        first_dates[col] = fvi.strftime("%Y-%m-%d")
+            first_dates = _detect_late_starters(pp)
             return pp.ffill().bfill(), first_dates
         except Exception as exc:
             print(f"  WARNING: {interval} portfolio price fetch failed: {exc}")
@@ -1611,6 +1863,10 @@ def _generate_positions_section(portfolio_df, opts_df, fund_df, portfolio_value,
     merged = portfolio_df.merge(fund_df[available_cols], on="Symbol", how="left")
     merged.loc[merged["PositionType"] == "Cash", "Type"] = "Cash"
     merged.loc[merged["PositionType"] == "Cash", "Beta"] = 0.0
+    # Mutual funds are non-tradeable placeholder rows: label the Type so the
+    # row and the "Mutual Funds" KPI read correctly; leave Beta unset ("-")
+    # since no market data is fetched for them.
+    merged.loc[merged["PositionType"] == "Mutual Fund", "Type"] = "Mutual Fund"
     merged["Weight"] = merged["Mkt Value (CAD)"] / portfolio_value if portfolio_value else 0
 
     option_counts = opts_df.groupby("Symbol").size().to_dict()
@@ -2905,13 +3161,30 @@ def _generate_performance_section(perf_data):
             return null;
         }}
         var rebalSet = {{}};
+        var tfs = [];
         var startY = parseInt(dates[startIdx].slice(0, 4), 10);
         var endY   = parseInt(dates[dates.length - 1].slice(0, 4), 10);
         for (var yr = startY; yr <= endY + 1; yr++) {{
             [3, 6, 9, 12].forEach(function(mo) {{
                 var tf = thirdFriday(yr, mo);
-                if (tf) rebalSet[tf] = true;
+                if (tf) tfs.push(tf);
             }});
+        }}
+        tfs.sort();
+        // Map each third Friday to the FIRST DATA DATE on or after it. An
+        // exact string match only works on daily data: weekly bars are
+        // Monday-stamped and monthly bars 1st-of-month-stamped, so a Friday
+        // date never appears and the rebalance silently never fired there
+        // (the line degenerated to unrebalanced buy-and-hold). Skip third
+        // Fridays at/before the window start - the simulation already begins
+        // at target weights.
+        var ti = 0;
+        while (ti < tfs.length && tfs[ti] <= dates[startIdx]) ti++;
+        for (var k = startIdx + 1; k < dates.length && ti < tfs.length; k++) {{
+            if (dates[k] >= tfs[ti]) {{
+                rebalSet[dates[k]] = true;
+                while (ti < tfs.length && tfs[ti] <= dates[k]) ti++;
+            }}
         }}
 
         // Simulate: portfolio value starts at 1
@@ -3279,7 +3552,18 @@ def generate_single_html(
     rotation_html, _dashboard_rrg_unused, rotation_js = _generate_rotation_section(rrg_data)
     performance_html, performance_js = _generate_performance_section(perf_data or {})
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Local time of the machine running the script, labelled with the zone
+    # code and UTC offset so reports built in different environments (host
+    # shell = PDT, Jenkins container = UTC) are never ambiguous. Windows
+    # reports the full zone name ("Pacific Daylight Time"), so abbreviate
+    # to its initials (PDT); Linux/macOS already give the short code.
+    now_local = datetime.now().astimezone()
+    tz_name = now_local.strftime("%Z")
+    if len(tz_name) > 4:
+        tz_name = "".join(w[0] for w in tz_name.split() if w[:1].isupper())
+    tz_offset = now_local.strftime("%z") or "+0000"
+    tz_offset = f"{tz_offset[:3]}:{tz_offset[3:]}" if len(tz_offset) >= 5 else tz_offset
+    timestamp = f"{now_local:%Y-%m-%d %H:%M:%S} {tz_name} (UTC{tz_offset})"
 
     # Build nav HTML
     nav_links = []
@@ -3465,12 +3749,39 @@ document.addEventListener('DOMContentLoaded', function() {{
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Build the portfolio analytics single-page HTML report from an Excel workbook."
+    )
+    parser.add_argument(
+        "--input", "-i",
+        type=Path,
+        default=DEFAULT_PORTFOLIO_FILE,
+        help=f"Input workbook (.xlsx) path (default: {DEFAULT_PORTFOLIO_FILE})",
+    )
+    parser.add_argument(
+        "--output", "-o",
+        type=Path,
+        default=DEFAULT_OUTPUT_FILE,
+        help=f"Output HTML file path (default: {DEFAULT_OUTPUT_FILE})",
+    )
+    args = parser.parse_args()
+
+    portfolio_file = args.input.resolve()
+    output_html = args.output.resolve()
+    json_path = output_html.parent / (
+        "risk_metrics.json" if output_html.stem == "index"
+        else f"{output_html.stem}_risk_metrics.json"
+    )
+
+    if not portfolio_file.exists():
+        parser.error(f"input workbook not found: {portfolio_file}")
+
     print("=" * 60)
     print("Stock Portfolio Analytics Report Generator v3 (Single-Page)")
     print("=" * 60)
 
     # 1. Read all data
-    portfolio_df, opts_df, usd_cad_rate = read_portfolio(PORTFOLIO_FILE)
+    portfolio_df, opts_df, usd_cad_rate = read_portfolio(portfolio_file)
     print(f"  Loaded {len(portfolio_df)} portfolio positions")
     print(f"  Loaded {len(opts_df)} option contracts")
     print(f"  USD/CAD rate: {usd_cad_rate}")
@@ -3483,11 +3794,24 @@ def main():
         sub = portfolio_df[portfolio_df["PositionType"] == ptype]["Mkt Value (CAD)"].sum()
         print(f"    {ptype}: ${sub:,.0f}")
 
+    # 2b. Map CAD-priced positions to their TSX Yahoo listings. Plain US
+    # symbols often resolve to an unrelated security or a USD price for
+    # Canadian tickers (e.g. H → Hyatt instead of Hydro One), so any symbol
+    # priced in CAD in the spreadsheet is fetched from its .TO listing.
+    cad_syms = portfolio_df.loc[
+        portfolio_df["Currency"].astype(str).str.upper().eq("CAD"), "Symbol"
+    ].unique()
+    tsx_overrides = {s: tsx_yahoo_symbol(s) for s in cad_syms if s not in NON_YAHOO_SYMBOLS}
+    set_ticker_overrides(tsx_overrides)
+    if tsx_overrides:
+        sample = list(tsx_overrides.items())[:3]
+        examples = ", ".join(f"{k} → {v}" for k, v in sample)
+        print(f"  TSX mapping for {len(tsx_overrides)} CAD-priced symbols ({examples}, …)")
+
     # 3. Collect all tradeable tickers
-    non_tradeable = {"Cash", "Short Cash"}
-    stock_tickers = [t for t in portfolio_df["Symbol"].unique() if t not in non_tradeable]
+    stock_tickers = [t for t in portfolio_df["Symbol"].unique() if t not in NON_YAHOO_SYMBOLS]
     option_underlyings = opts_df["Symbol"].unique().tolist()
-    extra_tickers = [t for t in option_underlyings if t not in stock_tickers and t not in non_tradeable]
+    extra_tickers = [t for t in option_underlyings if t not in stock_tickers and t not in NON_YAHOO_SYMBOLS]
     all_tickers = sorted(set(stock_tickers + extra_tickers))
     print(f"\n  Unique tradeable tickers (stocks+options): {len(all_tickers)}")
 
@@ -3517,11 +3841,10 @@ def main():
     latest_prices = fetch_latest_prices(prices)
     if latest_prices:
         print(f"\nUpdating portfolio prices with latest live data ({len(latest_prices)} tickers)...")
-        non_tradeable = {"Cash", "Short Cash"}
         updated_count = 0
         for idx, row in portfolio_df.iterrows():
             sym = row["Symbol"]
-            if sym in non_tradeable:
+            if sym in NON_YAHOO_SYMBOLS:
                 continue
             if sym in latest_prices:
                 old_price = row["Price"]
@@ -3644,10 +3967,10 @@ def main():
         usd_cad_rate=usd_cad_rate,
     )
 
-    filepath = OUTPUT_DIR / "index.html"
-    filepath.write_text(html, encoding="utf-8")
-    size_kb = filepath.stat().st_size / 1024
-    print(f"  Written: index.html ({size_kb:.1f} KB)")
+    output_html.parent.mkdir(parents=True, exist_ok=True)
+    output_html.write_text(html, encoding="utf-8")
+    size_kb = output_html.stat().st_size / 1024
+    print(f"  Written: {output_html} ({size_kb:.1f} KB)")
 
     # JSON metrics
     metrics_json = {}
@@ -3658,13 +3981,12 @@ def main():
             metrics_json[k] = int(v)
         else:
             metrics_json[k] = str(v)
-    json_path = OUTPUT_DIR / "risk_metrics.json"
     json_path.write_text(json.dumps(metrics_json, indent=2), encoding="utf-8")
-    print(f"  Written: risk_metrics.json")
+    print(f"  Written: {json_path}")
 
     print("\n" + "=" * 60)
     print("BUILD COMPLETE - 1 HTML report + 1 JSON file generated")
-    print(f"Open index.html in a browser to view the dashboard.")
+    print(f"Open {output_html} in a browser to view the dashboard.")
     print("=" * 60)
 
 

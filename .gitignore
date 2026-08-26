@@ -208,3 +208,18 @@ __marimo__/
 
 # Graphify output
 graphify-out/
+
+# Excel workbooks (except the sample input)
+*.xlsx
+!sample_portfolio.xlsx
+
+# HTML reports (except the default report)
+*.html
+!index.html
+
+# JSON outputs (except the default metrics file)
+*.json
+!risk_metrics.json
+
+# SQLite market-data cache
+market_data_cache.db
