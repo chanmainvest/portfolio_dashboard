@@ -1,0 +1,12 @@
+# Keep the build context tiny: the image only needs pyproject.toml + uv.lock
+# (the report script comes from the /app bind mount at runtime).
+.git
+.venv
+.mimosa
+graphify-out
+*.xlsx
+*.html
+*.json
+*.db
+__pycache__
+*.pyc

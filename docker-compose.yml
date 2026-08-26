@@ -1,0 +1,29 @@
+# Runtime service for the nightly Jenkins report pipeline (and for running
+# the report in a pinned environment from any shell). See Jenkinsfile and
+# AGENTS.md "Nightly Jenkins pipeline".
+#
+# Build:  docker compose build report
+# Run:    docker compose run --rm report            (grandma.html, the default)
+#         docker compose run --rm report python build_portfolio_report.py
+#
+# Modelled on knowledge_base/docker-compose.yml (`kb` service).
+
+services:
+  report:
+    build: .
+    image: portfolio-report:latest
+    volumes:
+      # The whole repo root is bind-mounted so the build script, the input
+      # workbook, the generated HTML/JSON, and market_data_cache.db all live
+      # on the host and are shared with the local `uv run` workflow.
+      #
+      # The source must be an ABSOLUTE HOST path (WORKSPACE_DIR_HOST in .env)
+      # when Jenkins runs this compose: a relative `.` is resolved by the
+      # Docker daemon inside the Docker Desktop VM - a different filesystem
+      # from the Jenkins container's /work bind - and the daemon silently
+      # creates an orphan copy there (the kb pipeline hit exactly this bug;
+      # see knowledge_base/doc/jenkins-pipeline.md). /host_mnt/<drive>/... is
+      # the Docker Desktop in-VM alias for a Windows drive. The `.` default
+      # keeps plain local `docker compose run report` working without .env.
+      - ${WORKSPACE_DIR_HOST:-.}:/app
+    # One-shot runner: no ports, no restart policy.

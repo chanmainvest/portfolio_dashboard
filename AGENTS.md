@@ -523,6 +523,12 @@ The script reads from `sample_portfolio.xlsx` in the workspace root, which must 
 
 Fundamentals (sector, industry, beta, type) are fetched live from yfinance for all tradeable tickers. No Fundamental sheet is required.
 
+### Ticker Handling (Canadian listings & placeholders)
+
+- **CAD-priced positions auto-map to TSX**: any Portfolio-sheet symbol whose `Currency` is `CAD` is fetched from its Yahoo TSX listing (`.TO`, with class suffixes converted to dashes: `TECK.B` → `TECK-B.TO`, `BEI.UN` → `BEI-UN.TO`, `SU` → `SU.TO`). Plain US symbols often resolve to an unrelated security or a USD price for Canadian tickers (e.g. `H` → Hyatt instead of Hydro One; `RY` → NYSE USD price instead of TSX CAD), so this mapping keeps live prices consistent with the spreadsheet's currency.
+- **`NON_YAHOO_SYMBOLS` blocklist** (`build_portfolio_report.py`): symbols never sent to Yahoo — cash rows (`Cash`, `Short Cash`), mutual-fund placeholder rows (`Mutual Fund` — kept at their spreadsheet price, shown in the Positions tab with a "Mutual Fund" type and a distinct exposure slice, but excluded from all market analytics: correlation, risk, stress, rotation), and symbols Yahoo resolves to unrelated securities (`RBF607` = CIBC fund code, `EU`, `EMPR`, `GIGA` = TSX listings with no Yahoo data). Extend this set when adding new fund codes or placeholder symbols to a workbook.
+- **Option chains always use the plain US-listed symbol** — spreadsheet option contracts are US-listed even when the underlying stock position maps to a TSX ticker (e.g. NTR positions fetch `NTR.TO` prices, NTR options fetch `NTR` chains).
+
 ### Interactive Features
 
 - **Tab Navigation**: All analytics sections are displayed as tabs within a single `index.html` page. Click navigation links to switch between Dashboard, Positions, Options, Correlation, Risk Metrics, Stress Testing, Exposure, Rotation, and Performance tabs. URL hash updates automatically (e.g., `#positions`) for direct linking and browser back/forward support.
@@ -544,8 +550,49 @@ Fundamentals (sector, industry, beta, type) are fetched live from yfinance for a
 This project uses **uv** as its Python package manager. Dependencies are declared in `pyproject.toml` and managed automatically.
 
 ```bash
-uv run python build_portfolio_report.py
+uv run python build_portfolio_report.py                                  # defaults: sample_portfolio.xlsx → index.html
+uv run python build_portfolio_report.py --input my_portfolio.xlsx       # custom input workbook
+uv run python build_portfolio_report.py --output reports/foo.html       # custom output path
 ```
 
 Open `index.html` in a browser to view the dashboard. All tabs are contained in a single file — no other HTML files are generated.
+
+### Market Data Cache (SQLite)
+
+Downloaded yfinance data is cached in **`market_data_cache.db`** (SQLite, workspace root, gitignored) so rebuilds only download new data instead of re-fetching everything:
+
+| Data | Table | Refresh behavior |
+|------|-------|------------------|
+| Price history (daily / weekly / monthly Close bars for all tickers and benchmarks) | `price_history` | Incremental — only bars after each ticker's last cached date are downloaded; the rest are served from cache |
+| Fundamentals (sector, industry, beta, P/E, quote type) | `fundamentals` | TTL 7 days |
+| Option quotes (bid/ask/last per contract) | `option_quotes` | TTL 4 hours |
+
+Notes:
+
+- The cache is shared across input workbooks (keyed by ticker), so building reports for different portfolios still reuses the same market data.
+- Delete `market_data_cache.db` to force a full refetch.
+- Cached values always win within their TTL/window; a failed download falls back to whatever is already cached.
+
+### Nightly Jenkins Pipeline
+
+The Jenkins job **`portfolio-report-nightly`** (<http://localhost/jenkins/job/portfolio-report-nightly/>) regenerates `grandma.html` every night at **03:30 local (PDT)**, staggered 30 min after `knowledge-base-nightly`. It follows the knowledge_base pipeline pattern (`knowledge_base/doc/jenkins-pipeline.md`): the Jenkins controller has no Python/uv, so each stage shells out to the self-contained **`report` Docker image**.
+
+```
+Jenkins (cron 03:30) ──► docker compose run --rm report ──► bind-mounted repo at /app
+   workspace: /work/chanmainvest/portfolio_dashboard          (xlsx in, html + cache out)
+```
+
+| File | Purpose |
+|------|---------|
+| `Jenkinsfile` | Two stages: build/refresh the image (5× retry, cached-image fallback), then regenerate the report. Job config embeds this script. |
+| `Dockerfile` | `python:3.12-slim` + uv, deps from `pyproject.toml`/`uv.lock` installed to **`/opt/venv`** (not `/app/.venv` — the runtime bind mount over `/app` would shadow it). The build script itself is not baked in; it comes from the mount, so workspace edits take effect without an image rebuild. |
+| `docker-compose.yml` | `report` service; binds the repo root into the container so input workbook, output HTML/JSON, and `market_data_cache.db` persist on the host and stay shared with the local `uv run` workflow. |
+| `.env` (gitignored) | `WORKSPACE_DIR_HOST=/host_mnt/b/chanmainvest/portfolio_dashboard` — the **absolute host path** required because Jenkins-side compose has its bind sources resolved inside the Docker Desktop VM (relative paths silently create orphan copies there). |
+
+Notes:
+
+- The job-level **TimerTrigger (`30 3 * * *`) is NOT optional**: the Jenkinsfile's own `triggers { cron(...) }` only re-arms after a build completes, and re-posting the job's `config.xml` resets `<triggers/>`. Any config re-post must keep the TimerTrigger and be followed by a manual build.
+- The job config embeds the `Jenkinsfile` via REST API (`createItem`, sandbox=true, UTF-8 XML declaration) — after editing the `Jenkinsfile`, re-post the config or switch the job to *Pipeline script from SCM*. Full gotcha list (crumb/session, dash-not-bash `sh`, `</dev/null` in loops): see `knowledge_base/doc/jenkins-pipeline.md` §4.
+- At 03:30 PDT the latest close is the previous US trading day (US close = 13:00 PDT). For same-evening closes, move the schedule to ~14:30 PDT — change both the Jenkinsfile cron and the job-level TimerTrigger.
+- Local equivalent: `docker compose build report && docker compose run --rm report`.
 
